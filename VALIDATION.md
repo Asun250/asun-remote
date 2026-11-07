@@ -8,7 +8,17 @@ The user installed v1.3 and confirmed that YouTube still does not expose a text 
 
 The phone query is retained after launch acknowledgement because the TV's acknowledgement cannot confirm visible YouTube results. This is direct search, not insertion into the current field. No new permissions, external relay, TV debugging, root access, or account credentials are introduced.
 
-Five regression tests cover single-query encoding and length limits, direct search without keyboard registration, search with an explicitly unfocused IME, launch rejection without automatic retry, and recognition of only supported YouTube metadata. The previous 27 tests remain. Native compilation and the 32-test suite are pending the v1.4 cloud build. No v1.4 physical-TV or simulator UI test has been performed.
+Five regression tests cover single-query encoding and length limits, direct search without keyboard registration, search with an explicitly unfocused IME, launch rejection without automatic retry, and recognition of only supported YouTube metadata. The previous 27 tests remain. All 32 core tests passed with zero failures, and the complete Release iPhone app compiled successfully. No v1.4 physical-TV or simulator UI test has been performed.
+
+## Successful v1.4 build
+
+- [Cloud run #6](https://github.com/Asun250/asun-remote/actions/runs/42349121400) built source commit `349ce2400a762db303c875d8c4a266e609053d04`.
+- 32 core tests, zero failures; unsigned Release iPhone build successful.
+- Artifact ZIP: 378,803 bytes; SHA-256 `002765372ac24a1abd166025023e9b65ba5fae165ce4960afa5ce636bb4dbd31`.
+- IPA: 379,053 bytes; SHA-256 `d44fe484b343c2b8e699e97a94cc9f0330a439e870a5fe67fcd11d6887f397bb`.
+- ZIP and IPA integrity, version 1.4.0 (5), bundle identifier `com.markanthony.asunremote`, iPhoneOS platform, minimum iOS 17.0, and arm64 Mach-O executable verified.
+- Verified IPA copied to `C:\Asun remote app\AsunRemote-v1.4.ipa` with the same SHA-256. The distributed ZIP is the unchanged cloud artifact.
+- The user requested public visibility; GitHub's repository settings confirmed the repository is public.
 
 ## Version 1.3 history
 

@@ -4,7 +4,7 @@ A native SwiftUI remote-control project for Mark Anthony’s **LG webOS UM6970PU
 
 **Version 1.4 adds a separate YouTube search option.** Open Keyboard, leave **YouTube** selected, type on your iPhone, then tap **Search YouTube on TV**. It asks the YouTube TV app to open search results directly; it does not type into the currently focused search box and does not wait for LG field detection. If YouTube opens only its home screen, try **Compatibility search** once with the retained query.
 
-The user confirmed the v1.2 OK and volume changes work. They installed v1.3 and confirmed YouTube still reports no text field even after refreshing. Version 1.4 keeps the registered LG keyboard under **TV field** for apps that support it, while YouTube uses its own search launch route. The new route needs physical verification on this TV; a successful TV request does not prove that YouTube displayed results.
+The user confirmed the v1.2 OK and volume changes work. They installed v1.3 and confirmed YouTube still reports no text field even after refreshing. Version 1.4 keeps the registered LG keyboard under **TV field** for apps that support it, while YouTube uses its own search launch route. The new route needs physical verification on this TV; a successful TV request does not prove that YouTube displayed results. All 32 core tests passed and the complete v1.4 iPhone build succeeded.
 
 Standby wake remains experimental and unverified; the TV's physical power button is available for turning it on.
 
