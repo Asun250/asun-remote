@@ -457,6 +457,88 @@ final class RemoteCoreTests: XCTestCase {
         await client.disconnect()
     }
 
+    func testYouTubeQueryEncodingPreservesOneQuery() throws {
+        let query = "Beyoncé & cats + dogs? #live = 100% / 東京\nnext"
+        for parameter in [YouTubeSearchParameter.contentTarget, .target] {
+            let payload = try YouTubeSearch.payload(query: "  " + query + "  ", parameter: parameter)
+            XCTAssertEqual(payload["id"]?.string, "youtube.leanback.v4")
+            let params = try XCTUnwrap(payload["params"]?.object)
+            XCTAssertEqual(params.count, 1)
+            let target = try XCTUnwrap(params[parameter.rawValue]?.string)
+            let url = try XCTUnwrap(URLComponents(string: "https://example.invalid/?" + target))
+            XCTAssertEqual(url.queryItems, [URLQueryItem(name: "q", value: query)])
+            XCTAssertTrue(target.contains("%2B"))
+            XCTAssertTrue(target.contains("%26"))
+        }
+        for query in ["", " \n\t ", String(repeating: "a", count: 501)] {
+            XCTAssertThrowsError(try YouTubeSearch.payload(query: query, parameter: .contentTarget))
+        }
+    }
+
+    func testYouTubeSearchDoesNotRegisterOrWaitForATextField() async throws {
+        let socket = FakeSocket { text, socket in try await keyboardReply(text, socket) }
+        let client = LGTVClient(factory: { _ in socket })
+        _ = try await client.connect(to: endpoint(), clientKey: nil)
+        do { try await client.searchYouTube("   ", parameter: .contentTarget); XCTFail("Empty query must fail") }
+        catch { XCTAssertTrue(error.localizedDescription.contains("1 to 500")) }
+        try await client.searchYouTube("cat videos", parameter: .contentTarget)
+        let sent = try await socket.sent.map(decode)
+        XCTAssertEqual(sent.map(\.type), ["register", "request"])
+        XCTAssertEqual(sent.last?.uri, "ssap://system.launcher/launch")
+        XCTAssertEqual(sent.last?.payload, ["id": .string("youtube.leanback.v4"),
+            "params": .object(["contentTarget": .string("q=cat%20videos")])])
+        await client.disconnect()
+    }
+
+    func testYouTubeCompatibilitySearchWorksWithUnfocusedIME() async throws {
+        let socket = FakeSocket { text, socket in try await keyboardReply(text, socket, focused: false) }
+        let client = LGTVClient(factory: { _ in socket })
+        _ = try await client.connect(to: endpoint(), clientKey: nil)
+        let state = try await client.keyboardState()
+        XCTAssertEqual(state.focused, false)
+        try await client.searchYouTube("cats", parameter: .contentTarget.alternate)
+        let requests = try await socket.sent.map(decode).filter { $0.type == "request" }
+        XCTAssertEqual(requests.count, 1)
+        XCTAssertEqual(requests.first?.uri, "ssap://system.launcher/launch")
+        XCTAssertEqual(requests.first?.payload?["params"]?.object, ["target": .string("q=cats")])
+        await client.disconnect()
+    }
+
+    func testRejectedYouTubeSearchDoesNotAutomaticallyRetry() async throws {
+        let socket = FakeSocket { text, socket in
+            let request = try decode(text)
+            if request.type == "register" { try await registered(text, socket); return }
+            await socket.push(try TVEnvelope(type: "response", id: request.id,
+                payload: ["returnValue": .bool(false), "errorText": .string("Launch unavailable")]).text())
+        }
+        let client = LGTVClient(factory: { _ in socket })
+        _ = try await client.connect(to: endpoint(), clientKey: nil)
+        do { try await client.searchYouTube("cats", parameter: .contentTarget); XCTFail("Expected rejection") }
+        catch { XCTAssertEqual(error.localizedDescription, "Launch unavailable") }
+        let sent = try await socket.sent.map(decode)
+        XCTAssertEqual(sent.filter { $0.type == "request" }.count, 1)
+        let connected = await client.isConnected
+        XCTAssertTrue(connected)
+        await client.disconnect()
+    }
+
+    func testOnlyRecognizedYouTubeSearchTemplatesAreUsed() {
+        let stock = "{\"contentTarget\":\"q=$SEARCH_KEYWORD\"}"
+        let alternative = "{\"target\":\"q=$SEARCH_KEYWORD\"}"
+        XCTAssertEqual(YouTubeSearchParameter.advertised(in: stock), .contentTarget)
+        XCTAssertEqual(YouTubeSearchParameter.advertised(in: alternative), .target)
+        for template in [nil, "not JSON", "{\"url\":\"q=$SEARCH_KEYWORD\"}",
+                         "{\"target\":\"https://example.invalid/$SEARCH_KEYWORD\"}"] {
+            XCTAssertNil(YouTubeSearchParameter.advertised(in: template))
+        }
+        let apps = TVApp.parse(["apps": .array([
+            .object(["id": .string(YouTubeSearch.appID), "inAppSearchParams": .string(stock)]),
+            .object(["id": .string("other.app"), "inAppSearchParams": .string(alternative)])
+        ])])
+        XCTAssertEqual(apps.first { $0.id == YouTubeSearch.appID }?.youTubeSearchParameter, .contentTarget)
+        XCTAssertNil(apps.first { $0.id == "other.app" }?.youTubeSearchParameter)
+    }
+
     func testReconnectDoesNotReuseTheOldKeyboardFocus() async throws {
         let first = FakeSocket { text, socket in try await keyboardReply(text, socket) }
         let second = FakeSocket { text, socket in try await keyboardReply(text, socket, focused: false) }

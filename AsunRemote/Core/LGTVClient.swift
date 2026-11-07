@@ -174,6 +174,12 @@ actor LGTVClient {
         _ = try await request("com.webos.service.ime/deleteCharacters", payload: ["count": .number(1)])
     }
 
+    func searchYouTube(_ query: String, parameter: YouTubeSearchParameter) async throws {
+        // YouTube's own search launch route does not use LG's focused-field IME.
+        let payload = try YouTubeSearch.payload(query: query, parameter: parameter)
+        _ = try await request("system.launcher/launch", payload: payload)
+    }
+
     private func requireTextField() async throws {
         let state = try await keyboardState()
         guard state.focused == true else {

@@ -1,8 +1,16 @@
-# Validation — Asun Remote 1.3
+# Validation — Asun Remote 1.4
 
-Updated November 6, 2026 (Pacific time). Target family: LG webOS UM6970PUA.
+Updated November 7, 2026 (UTC). Target family: LG webOS UM6970PUA.
 
-## Current update: v1.3
+## Current update: v1.4
+
+The user installed v1.3 and confirmed that YouTube still does not expose a text field, including after Refresh. Version 1.4 adds a default YouTube destination in the keyboard sheet. It launches `youtube.leanback.v4` with a percent-encoded `q=` query in `contentTarget`, using the installed app's recognized `inAppSearchParams` metadata when available. An explicit Compatibility search button tries the other known parameter (`target` or `contentTarget`); it never retries automatically. The LG-native TV field mode retains its focused-field guard.
+
+The phone query is retained after launch acknowledgement because the TV's acknowledgement cannot confirm visible YouTube results. This is direct search, not insertion into the current field. No new permissions, external relay, TV debugging, root access, or account credentials are introduced.
+
+Five regression tests cover single-query encoding and length limits, direct search without keyboard registration, search with an explicitly unfocused IME, launch rejection without automatic retry, and recognition of only supported YouTube metadata. The previous 27 tests remain. Native compilation and the 32-test suite are pending the v1.4 cloud build. No v1.4 physical-TV or simulator UI test has been performed.
+
+## Version 1.3 history
 
 The user confirmed v1.2 works and then reported that typing in YouTube Search does not work. Code inspection found no `registerRemoteKeyboard` subscription, no focused-field detection, and a separate Enter / Search action that could submit without first sending the phone draft.
 
@@ -10,7 +18,7 @@ The update establishes a session-scoped keyboard subscription, processes ongoing
 
 Eight new protocol tests cover registration/insertion/submission ordering with Unicode and whitespace, ongoing focus changes, an acknowledgement without field status, insertion failure, partial success, unsubscribing/rechecking with stale events, keyboard-service rejection without breaking volume commands, and reconnect isolation. All **27 core tests passed with zero failures**, and the complete Release iPhone build succeeded.
 
-No simulator UI or physical-TV keyboard test has been run. YouTube may not expose its custom search field through LG's IME service; the readiness status and a comparison with the TV browser are needed to distinguish that limitation from a connection failure. Do not report YouTube typing as fixed until the user verifies it.
+After installation, the user tested YouTube and confirmed no text field is detected, even after refreshing. The v1.3 route did not solve YouTube input. An LG browser field and simulator UI have not been tested.
 
 ## Successful v1.3 build
 
@@ -38,7 +46,7 @@ All 19 core tests passed with zero failures, including the updated Up → Enter 
 - Archive and IPA integrity checked. Embedded bundle identifier `com.markanthony.asunremote`, version `1.2.0`, build `3`, iPhoneOS platform, minimum iOS 17.0, and arm64 Mach-O executable confirmed.
 - The distributed ZIP is the unmodified cloud artifact, including the version 1.2 Windows installation instructions.
 
-These checks establish compilation, package integrity, and simulated protocol behavior. They do not establish that either reported bug is resolved on the user's physical TV.
+These automated checks establish compilation, package integrity, and simulated protocol behavior. The later user report confirmed that the v1.2 OK and volume changes worked on the TV.
 
 ## Version 1.1 validation history
 
@@ -52,7 +60,7 @@ The user explicitly approved uploading the update to the existing private Asun25
 
 ## Physical verification still required
 
-- Version 1.3 keyboard layout, field readiness, input delivery and search submission in YouTube and an LG browser field; native layout and accessibility. The user reported v1.2 was working after installation.
+- Version 1.4 direct YouTube results for both query formats; native layout and accessibility. LG-browser field readiness, insertion and submission still need verification. The user confirmed v1.2 working and v1.3 YouTube field detection failing.
 - Keychain/TLS persistence and reliable behavior of all remote commands on this TV.
 - Wake request acceptance by the signed iOS app with Local Network permission.
 - Actual power-on after short standby, 15 minutes, and overnight. The app cannot infer screen power from successful UDP transmission. A later registered TV session confirms connectivity only.

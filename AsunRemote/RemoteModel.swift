@@ -22,6 +22,7 @@ final class RemoteModel: ObservableObject {
     @Published private(set) var keyboardBusy = false
     @Published private(set) var keyboardProblem: String?
     @Published private(set) var keyboardNotice: String?
+    @Published private(set) var youtubeNotice: String?
 
     var connected: Bool { phase == .connected }
     var pairing: Bool { phase == .pairing }
@@ -234,6 +235,27 @@ final class RemoteModel: ObservableObject {
         if id == connectionID { keyboardBusy = false }
     }
 
+    func searchYouTube(_ query: String, compatibility: Bool) async {
+        guard connected, !keyboardBusy else { return }
+        let id = connectionID
+        let preferred = apps.first { $0.id == YouTubeSearch.appID }?.youTubeSearchParameter ?? .contentTarget
+        let parameter = compatibility ? preferred.alternate : preferred
+        keyboardBusy = true
+        youtubeNotice = nil
+        let operation = enqueue { [weak self] connection in
+            do {
+                try await connection.searchYouTube(query, parameter: parameter)
+                guard let self, id == self.connectionID else { return }
+                self.youtubeNotice = "Search request accepted. Check YouTube on your TV for results. If only its home screen appears, try Compatibility search below."
+            } catch {
+                guard let self, id == self.connectionID else { return }
+                self.youtubeNotice = "YouTube search was not confirmed. \(self.friendlyError(error))"
+            }
+        }
+        await operation?.value
+        if id == connectionID { keyboardBusy = false }
+    }
+
     func powerOff() {
         enqueue { [weak self] connection in
             do { _ = try await connection.request("system/turnOff") }
@@ -359,6 +381,7 @@ final class RemoteModel: ObservableObject {
         keyboardBusy = false
         keyboardProblem = nil
         keyboardNotice = nil
+        youtubeNotice = nil
         connectionTask?.cancel(); connectionTask = nil
         monitorTask?.cancel(); monitorTask = nil
         commandTail?.cancel(); commandTail = nil

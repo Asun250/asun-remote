@@ -204,10 +204,10 @@
 			"buildSettings" = {
 				"ASSETCATALOG_COMPILER_APPICON_NAME" = "AppIcon";
 				"CODE_SIGN_STYLE" = "Automatic";
-				"CURRENT_PROJECT_VERSION" = "4";
+				"CURRENT_PROJECT_VERSION" = "5";
 				"GENERATE_INFOPLIST_FILE" = "NO";
 				"INFOPLIST_FILE" = "AsunRemote/Info.plist";
-				"MARKETING_VERSION" = "1.3.0";
+				"MARKETING_VERSION" = "1.4.0";
 				"PRODUCT_BUNDLE_IDENTIFIER" = "com.markanthony.asunremote";
 				"PRODUCT_NAME" = "$(TARGET_NAME)";
 				"SUPPORTED_PLATFORMS" = "iphoneos iphonesimulator";
@@ -238,10 +238,10 @@
 			"buildSettings" = {
 				"ASSETCATALOG_COMPILER_APPICON_NAME" = "AppIcon";
 				"CODE_SIGN_STYLE" = "Automatic";
-				"CURRENT_PROJECT_VERSION" = "4";
+				"CURRENT_PROJECT_VERSION" = "5";
 				"GENERATE_INFOPLIST_FILE" = "NO";
 				"INFOPLIST_FILE" = "AsunRemote/Info.plist";
-				"MARKETING_VERSION" = "1.3.0";
+				"MARKETING_VERSION" = "1.4.0";
 				"PRODUCT_BUNDLE_IDENTIFIER" = "com.markanthony.asunremote";
 				"PRODUCT_NAME" = "$(TARGET_NAME)";
 				"SUPPORTED_PLATFORMS" = "iphoneos iphonesimulator";

@@ -2,9 +2,9 @@
 
 A native SwiftUI remote-control project for Mark Anthony’s **LG webOS UM6970PUA**, identified from the TV photo showing firmware **05.40.97**. iPhone with iOS 17 or later. No third-party app dependencies.
 
-**Version 1.3 adds a registered TV keyboard session, live field readiness, and Send & Search.** Select a search field on the TV, open Keyboard on the iPhone, and wait for **TV text field ready**. Type a draft and choose **Send to TV** or **Send & Search**. The app waits for text acknowledgement before submitting Search, preserves unconfirmed drafts, and clears confirmed drafts to avoid duplicate insertion.
+**Version 1.4 adds a separate YouTube search option.** Open Keyboard, leave **YouTube** selected, type on your iPhone, then tap **Search YouTube on TV**. It asks the YouTube TV app to open search results directly; it does not type into the currently focused search box and does not wait for LG field detection. If YouTube opens only its home screen, try **Compatibility search** once with the retained query.
 
-The user confirmed the v1.2 OK and volume changes work on the TV. Their new keyboard report is specifically about **YouTube**. A YouTube screen may use its own keyboard without exposing an LG text field; the app now reports that state instead of silently sending text to nowhere. All 27 core tests passed and the complete v1.3 iPhone app compiled successfully. YouTube compatibility on this TV still requires a physical test.
+The user confirmed the v1.2 OK and volume changes work. They installed v1.3 and confirmed YouTube still reports no text field even after refreshing. Version 1.4 keeps the registered LG keyboard under **TV field** for apps that support it, while YouTube uses its own search launch route. The new route needs physical verification on this TV; a successful TV request does not prove that YouTube displayed results.
 
 Standby wake remains experimental and unverified; the TV's physical power button is available for turning it on.
 
@@ -18,12 +18,12 @@ Standby wake remains experimental and unverified; the TV's physical power button
 - Directional pad, OK, Back, Home, volume, mute, and tuner channel controls.
 - Separate Play, Pause, Rewind, and Fast-forward controls.
 - Installed apps and actual input names read from the TV.
-- Text entry for TV apps that support remote typing.
+- Direct YouTube search, plus LG text entry under TV field for apps that support remote typing.
 - Power **off**, with an on-screen confirmation.
 - Experimental **Try turning on** control, with per-TV MAC storage and bounded local unicast wake packets.
 - Connection timeouts, command errors, and reconnect after returning to the app.
 
-Power **on** must be tested before relying on it. See the setup and limitations below. Volume routed through a soundbar/receiver, individual app playback, and text-entry behavior need testing on your setup. The user has reported initial real-TV behavior; the v1.3 keyboard flow and other firmware-specific functions still need on-device testing.
+Power **on** must be tested before relying on it. See the setup and limitations below. Volume routed through a soundbar/receiver, individual app playback, and text-entry behavior need testing on your setup. The user has reported initial real-TV behavior; the v1.4 YouTube search route, LG-native text entry, and other firmware-specific functions still need on-device testing.
 
 ## Install using a Mac
 
@@ -72,7 +72,7 @@ If wake fails, use LG ThinQ to check whether the TV can wake with its supported 
 | Pairing prompt rejected/expired | Tap Connect again and approve the prompt on the TV. |
 | TV identity changed | Confirm the IP still belongs to this TV. If it was reset/updated, use Forget pairing and pair again. |
 | TV controls work, but an app ignores playback | Use the directional pad to operate that app’s own controls. App behavior varies. |
-| Keyboard does nothing | Select the actual TV search field and press OK. Open Keyboard and check for TV text field ready. Use Send & Search to send your phone draft before submitting. If YouTube reports no field, that screen may use its own keyboard; try an LG browser field to distinguish app support from a keyboard connection problem. |
+| Keyboard does nothing | For YouTube, choose Keyboard → YouTube, enter a query, and tap Search YouTube on TV. No TV field detection is required. If it opens only Home, try Compatibility search once. For an LG-native field, choose TV field and wait for TV text field ready before Send & Search. |
 | Volume does not change | Check whether a soundbar/receiver is handling volume instead of the TV. |
 | TV is off | Configure Mobile TV On and the active MAC, then use Try turning on. Wake remains unverified; use the TV’s physical button if it fails. |
 | Wake works immediately but fails later | Unicast/ARP or deeper standby may be the limit. Test LG ThinQ; do not treat this build as a reliable power-on replacement yet. |
@@ -118,3 +118,11 @@ The app does not open router ports, disable phone security settings, or enable T
 - [Apple: explicit content shape for hit testing](https://developer.apple.com/documentation/swiftui/view/contentshape(_:eofill:))
 - [LG Connect SDK: keyboard registration, field status, and ordered text commands](https://github.com/ConnectSDK/Connect-SDK-Android-Core/blob/master/src/com/connectsdk/service/webos/WebOSTVKeyboardInput.java)
 - [YouTube: use an iPhone to connect to and control the TV app](https://support.google.com/youtube/answer/7640706?co=GENIE.Platform%3DiOS&hl=en)
+
+## YouTube search implementation references
+
+- [Stock LG YouTube app metadata, webOS 4.9.7 / C9](https://github.com/webos-uxomis/youtube-webos-cobalt-ipks/blob/main/webOS-4.9.7-14-SoC-o18-OLED65C9PLA-youtube.leanback.v4-1.0.18.info.txt) advertises `contentTarget: q=$SEARCH_KEYWORD`. This is evidence from a related TV, not verification on the UM6970PUA.
+- [Connect SDK iOS launch implementation](https://github.com/ConnectSDK/Connect-SDK-iOS-Core/blob/master/Services/WebOSTVService.m) forwards app ID and params through `ssap://system.launcher/launch`.
+- [Modified webosbrew YouTube metadata](https://github.com/webosbrew/youtube-webos/blob/main/assets/appinfo.json) advertises the alternative `target` query. This is a modified app reference, not proof that all stock versions accept it.
+
+If the installed YouTube app advertises a recognized query parameter, the app uses it. Otherwise it defaults to `contentTarget`. Compatibility search explicitly tries the other parameter. Queries are percent-encoded as a single value. No automatic retries, browser fallback, account-token access, or TV developer mode is involved.

@@ -118,7 +118,7 @@ enum TVProtocol {
             "forcePairing": .bool(false),
             "manifest": .object([
                 "manifestVersion": .number(1),
-                "appVersion": .string("1.3.0"),
+                "appVersion": .string("1.4.0"),
                 "appId": .string("com.asunstudios.remote"),
                 "vendorId": .string("Asun Studios"),
                 "localizedAppNames": .object(["": .string("Asun Remote")]),
@@ -143,10 +143,19 @@ enum RemoteButton: String, CaseIterable, Sendable {
 struct TVApp: Identifiable, Equatable, Sendable {
     let id: String
     let title: String
+    let youTubeSearchParameter: YouTubeSearchParameter?
+
+    init(id: String, title: String, youTubeSearchParameter: YouTubeSearchParameter? = nil) {
+        self.id = id
+        self.title = title
+        self.youTubeSearchParameter = youTubeSearchParameter
+    }
     static func parse(_ payload: TVPayload) -> [TVApp] {
         (payload["apps"]?.array ?? []).compactMap { item in
             guard let data = item.object, let id = data["id"]?.string, !id.isEmpty else { return nil }
-            return TVApp(id: id, title: data["title"]?.string ?? id)
+            return TVApp(id: id, title: data["title"]?.string ?? id,
+                         youTubeSearchParameter: id == YouTubeSearch.appID
+                            ? YouTubeSearchParameter.advertised(in: data["inAppSearchParams"]?.string) : nil)
         }.sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
     }
 }
@@ -189,4 +198,38 @@ struct TVTextSendError: Error, LocalizedError, Sendable {
     let textInserted: Bool
     let detail: String
     var errorDescription: String? { detail }
+}
+
+enum YouTubeSearchParameter: String, Sendable {
+    case contentTarget, target
+    var alternate: YouTubeSearchParameter { self == .contentTarget ? .target : .contentTarget }
+
+    static func advertised(in template: String?) -> YouTubeSearchParameter? {
+        guard let data = template?.data(using: .utf8),
+              let fields = try? JSONDecoder().decode([String: String].self, from: data) else { return nil }
+        // Use only the two documented query formats, never arbitrary TV-supplied
+        // keys, URLs, launch destinations, or executable templates.
+        for candidate in [Self.contentTarget, .target] {
+            if fields[candidate.rawValue] == "q=$SEARCH_KEYWORD" { return candidate }
+        }
+        return nil
+    }
+}
+
+enum YouTubeSearch {
+    static let appID = "youtube.leanback.v4"
+
+    static func payload(query: String, parameter: YouTubeSearchParameter) throws -> TVPayload {
+        let query = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty, query.count <= 500 else {
+            throw RemoteError.message("Enter a YouTube search of 1 to 500 characters.")
+        }
+        // YouTube receives a query-string target. Encode the entire value so
+        // ampersands, plus signs, Unicode, and pasted text remain one query.
+        let allowed = CharacterSet(charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~")
+        guard let encoded = query.addingPercentEncoding(withAllowedCharacters: allowed) else {
+            throw RemoteError.message("This search text could not be encoded.")
+        }
+        return ["id": .string(appID), "params": .object([parameter.rawValue: .string("q=" + encoded)])]
+    }
 }

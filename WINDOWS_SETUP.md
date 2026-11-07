@@ -2,24 +2,25 @@
 
 You do not need to own a Mac. A cloud Mac builds the app once, then **Sideloadly on Windows** signs and installs it on your iPhone. After installation, the remote communicates directly with your LG TV. Your PC is only needed for installation and periodic signing refreshes.
 
-**Version 1.3:** registers with the TV's keyboard service, shows whether a TV text field is ready, and adds **Send & Search**. The v1.2 OK and volume improvements remain included. Install over the existing app using the **same Apple account and bundle identifier**.
+**Version 1.4:** adds **YouTube** search that does not wait for TV text-field detection. The existing **TV field** mode, OK and volume improvements remain included. Install over the existing app using the **same Apple account and bundle identifier**.
 
-On Mark's PC, select **`C:\Asun remote app\AsunRemote-v1.3.ipa`** in Sideloadly, then click **Start**. If using this ZIP instead, extract it and select `dist/AsunRemote-unsigned.ipa`. The checksum is in `dist/SHA256SUMS.txt`. Confirm version 1.3 in the app's Connection settings after updating.
+On Mark's PC, select **`C:\Asun remote app\AsunRemote-v1.4.ipa`** in Sideloadly, then click **Start**. Fully close Asun Remote on the iPhone before updating and keep the phone unlocked during installation. If using this ZIP instead, extract it and select `dist/AsunRemote-unsigned.ipa`. The checksum is in `dist/SHA256SUMS.txt`. Confirm version 1.4 in Connection settings after updating.
 
 After Sideloadly shows Done:
 
-1. On the TV, open YouTube Search and select the actual text field with OK.
-2. On the iPhone, open Asun Remote → Keyboard. Look for **TV text field ready**.
-3. Type a short query and tap **Send & Search**. This sends the draft first and submits only after the TV acknowledges the text. **Send to TV** inserts without submitting.
-4. Confirmed text disappears from the phone draft; if sending is unconfirmed, the draft stays. Check the TV before retrying after an error so a lost acknowledgement does not produce duplicate text.
-5. If YouTube stays at **No TV text field detected**, try the TV browser's address/search field. Some YouTube screens use a custom keyboard that is not exposed to LG remote apps. This update cannot force such a field to accept text. Use the arrow controls or YouTube's phone-to-TV connection for that screen.
-6. Check that OK/profile selection and Volume Down still work.
+1. Open Asun Remote and connect to the powered-on TV.
+2. Open **Keyboard** and leave **YouTube** selected. You do not need to select a search box on the TV first.
+3. Type a short query such as `cats` and tap **Search YouTube on TV**. This requests YouTube search results directly, rather than inserting characters into the currently focused TV field.
+4. Check the TV. If YouTube opens only its home screen, tap **Compatibility search** once. Your query stays on the phone for editing or this alternate attempt.
+5. Report whether search results appeared, only the home screen opened, nothing changed, or an error appeared. A request acknowledgement does not confirm visible search results.
+6. For an LG browser or other supported native text field, choose **TV field**, select the actual field on the TV, and wait for **TV text field ready** before using **Send to TV** or **Send & Search**. YouTube was confirmed not to expose a field on this setup in v1.3.
+7. Check that OK/profile selection and Volume Down still work.
 
-Keyboard input uses a local subscription for focus status; it does not read, save, or upload the TV's text-field contents. The phone draft is held only while the keyboard sheet is open. An acknowledgement means the TV accepted a request, not proof that YouTube displayed the text.
+Search text is sent directly from the iPhone to the TV, which uses YouTube to perform the search. The app does not log queries or read the TV field's contents. The phone draft is held only while the keyboard sheet is open. TV field mode clears acknowledged inserted text to avoid duplication; YouTube mode retains the query.
 
-## 1. Put the project in a private GitHub repository
+## 1. Get the project from GitHub
 
-Already completed: the source is in the private repository [Asun250/asun-remote](https://github.com/Asun250/asun-remote). Skip to step 3 to install v1.3. The repository/build instructions below are for rebuilding or moving the project later.
+Already completed: the source is in the public repository [Asun250/asun-remote](https://github.com/Asun250/asun-remote). Skip to step 3 to install v1.4. The repository/build instructions below are for rebuilding or moving the project later.
 
 Put the contents of the extracted **AsunRemote** folder at the repository root. The root must contain all of these:
 
