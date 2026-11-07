@@ -2,6 +2,10 @@
 
 A native SwiftUI remote-control project for Mark Anthony’s **LG webOS UM6970PUA**, identified from the TV photo showing firmware **05.40.97**. iPhone with iOS 17 or later. No third-party app dependencies.
 
+**Version 1.5 adds a Settings tab and TV Bluetooth audio controls.** It opens the TV's real Picture, Sound, Channels, Connection, General, Safety, and Accessibility menus. A compact phone remote stays available while you use those menus. The Bluetooth page guides pairing headphones, earbuds, or speakers to the **TV** and offers shortcuts for the paired Bluetooth device and TV speakers.
+
+The settings and available-device list appear on the TV, not as a complete live copy on the phone. Safety opens All Settings for manual selection. Firmware may ignore category shortcuts; use **TV menu** and select All Settings if needed. New menus and Bluetooth behavior still need physical verification on this TV.
+
 **Version 1.4 adds a separate YouTube search option.** Open Keyboard, leave **YouTube** selected, type on your iPhone, then tap **Search YouTube on TV**. It asks the YouTube TV app to open search results directly; it does not type into the currently focused search box and does not wait for LG field detection. If YouTube opens only its home screen, try **Compatibility search** once with the retained query.
 
 The user confirmed the v1.2 OK and volume changes work. They installed v1.3 and confirmed YouTube still reports no text field even after refreshing. Version 1.4 keeps the registered LG keyboard under **TV field** for apps that support it, while YouTube uses its own search launch route. The new route needs physical verification on this TV; a successful TV request does not prove that YouTube displayed results. All 32 core tests passed and the complete v1.4 iPhone build succeeded.
@@ -19,6 +23,7 @@ Standby wake remains experimental and unverified; the TV's physical power button
 - Separate Play, Pause, Rewind, and Fast-forward controls.
 - Installed apps and actual input names read from the TV.
 - Direct YouTube search, plus LG text entry under TV field for apps that support remote typing.
+- TV settings categories, guided Bluetooth audio pairing on the TV, and sound-output shortcuts with readback.
 - Power **off**, with an on-screen confirmation.
 - Experimental **Try turning on** control, with per-TV MAC storage and bounded local unicast wake packets.
 - Connection timeouts, command errors, and reconnect after returning to the app.
@@ -50,6 +55,16 @@ The Mac is needed for installation/building, not for normal remote use afterward
 The address in the input placeholder is an example, not your TV’s actual address. No network scan is performed. A manual IP avoids requiring Apple’s restricted multicast-discovery entitlement for this personal build.
 
 If Secure cannot connect, try the explicit **Legacy compatibility** option. That option uses unencrypted WebSocket traffic on the local network. It has its own saved pairing and is never selected automatically. If your router changes the TV’s IP address, update it and pair again; a router DHCP reservation can keep the address stable.
+
+## TV settings and Bluetooth audio
+
+1. Connect to the powered-on TV and open **Settings** in the app.
+2. Tap a category to open it on the TV. Use the arrows, **OK**, and **Back** at the bottom of the phone screen. If a shortcut opens a different page, choose the category on the TV. **TV menu** provides a remote-menu fallback.
+3. For earbuds, open **Bluetooth devices**, put the earbuds in pairing mode, and tap **Open Sound settings on TV**.
+4. On this LG generation, choose **Sound Out → Bluetooth → Device Selection** (some firmware says Device List). Select the device and connect using the phone's arrows and OK. Confirm that TV audio plays through the earbuds.
+5. After pairing, try **Use paired Bluetooth device** or **Use TV speakers**. **Refresh output** checks the TV's reported route; refresh after changing it on the TV.
+
+Only the TV discovers and pairs Bluetooth audio devices. The app does not scan iPhone Bluetooth, show an invented device list, or relay audio through the phone. LG determines which devices are compatible. Selecting Bluetooth output does not itself prove that a headset is connected. If output switching is unavailable, use the real Sound settings menu. A successful request followed by a failed read is shown as unverified, and the app does not automatically repeat it.
 
 ## Set up and test power on
 
@@ -91,7 +106,7 @@ Main code locations:
 - `AsunRemote/TVTrustDelegate.swift`: certificate trust scoped to the selected TV.
 - `AsunRemote/PairingStore.swift`: Keychain storage.
 - `AsunRemote/RemoteModel.swift`: app state and command handling.
-- `AsunRemote/ContentView.swift`, `ConnectionView.swift`: native iPhone screens.
+- `AsunRemote/ContentView.swift`, `ConnectionView.swift`, `TVSettingsView.swift`: native iPhone screens.
 
 ## Privacy and connection design
 
@@ -126,3 +141,11 @@ The app does not open router ports, disable phone security settings, or enable T
 - [Modified webosbrew YouTube metadata](https://github.com/webosbrew/youtube-webos/blob/main/assets/appinfo.json) advertises the alternative `target` query. This is a modified app reference, not proof that all stock versions accept it.
 
 If the installed YouTube app advertises a recognized query parameter, the app uses it. Otherwise it defaults to `contentTarget`. Compatibility search explicitly tries the other parameter. Queries are percent-encoded as a single value. No automatic retries, browser fallback, account-token access, or TV developer mode is involved.
+
+## TV settings and audio implementation references
+
+- [LG 2019 Sound Out guide](https://kr.eguide.lgappstv.com/manual/w19_mr/atsc/Contents/settings/sound/soundout_k_u_b/enga/w45__settings__sound__soundout_k_u_b__enga.html) documents Bluetooth and Device Selection on this generation.
+- [LG UM6970PUA specifications](https://www.lg.com/ca_en/tv-soundbars/4k-uhd-tvs/70um6970pua/) list Bluetooth support; the user's photo establishes the model family, not screen size.
+- [Home Assistant's aiowebostv endpoint definitions](https://github.com/home-assistant-libs/aiowebostv/blob/main/aiowebostv/endpoints.py) and [client implementation](https://github.com/home-assistant-libs/aiowebostv/blob/main/aiowebostv/webos_client.py) define ordinary remote sound-output requests.
+- [PyWebOSTV audio controls](https://github.com/supersaiyanmode/PyWebOSTV/blob/master/pywebostv/controls.py) document `tv_speaker` and `bt_soundbar` output values.
+- [Developer settings-launch examples](https://gist.github.com/Ircama/1f29c2d2def75da6604756a3c91a8ab4) identify settings app category targets. This app forwards those app-launch parameters using its existing paired remote connection; it does not use developer-shell commands or protected settings APIs.

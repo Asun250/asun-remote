@@ -2,25 +2,29 @@
 
 You do not need to own a Mac. A cloud Mac builds the app once, then **Sideloadly on Windows** signs and installs it on your iPhone. After installation, the remote communicates directly with your LG TV. Your PC is only needed for installation and periodic signing refreshes.
 
-**Version 1.4:** adds **YouTube** search that does not wait for TV text-field detection. The existing **TV field** mode, OK and volume improvements remain included. Install over the existing app using the **same Apple account and bundle identifier**.
+**Version 1.5:** adds a **Settings** tab, TV menu categories, Bluetooth audio pairing guidance, and shortcuts for a paired Bluetooth device or TV speakers. YouTube search, TV field mode, OK and volume improvements remain included. Install over the existing app using the **same Apple account and bundle identifier**.
 
-On Mark's PC, select **`C:\Asun remote app\AsunRemote-v1.4.ipa`** in Sideloadly, then click **Start**. Fully close Asun Remote on the iPhone before updating and keep the phone unlocked during installation. If using this ZIP instead, extract it and select `dist/AsunRemote-unsigned.ipa`. The checksum is in `dist/SHA256SUMS.txt`. Confirm version 1.4 in Connection settings after updating.
+On Mark's PC, select **`C:\Asun remote app\AsunRemote-v1.5.ipa`** in Sideloadly, then click **Start**. Fully close Asun Remote on the iPhone before updating and keep the phone unlocked during installation. If using this ZIP instead, extract it and select `dist/AsunRemote-unsigned.ipa`. The checksum is in `dist/SHA256SUMS.txt`. Confirm version 1.5 in Connection settings after updating.
 
 After Sideloadly shows Done:
 
 1. Open Asun Remote and connect to the powered-on TV.
-2. Open **Keyboard** and leave **YouTube** selected. You do not need to select a search box on the TV first.
-3. Type a short query such as `cats` and tap **Search YouTube on TV**. This requests YouTube search results directly, rather than inserting characters into the currently focused TV field.
-4. Check the TV. If YouTube opens only its home screen, tap **Compatibility search** once. Your query stays on the phone for editing or this alternate attempt.
-5. Report whether search results appeared, only the home screen opened, nothing changed, or an error appeared. A request acknowledgement does not confirm visible search results.
-6. For an LG browser or other supported native text field, choose **TV field**, select the actual field on the TV, and wait for **TV text field ready** before using **Send to TV** or **Send & Search**. YouTube was confirmed not to expose a field on this setup in v1.3.
-7. Check that OK/profile selection and Volume Down still work.
+2. Tap the new **Settings** tab. Try **Sound** or **All Settings** and use the phone's arrows and OK to navigate the TV menu. If a shortcut does not open the expected page, tap **TV menu** and select All Settings on the TV. Safety opens All Settings for manual selection.
+3. Open **Bluetooth devices** and put your earbuds/headphones/speaker in pairing mode.
+4. Tap **Open Sound settings on TV**, then choose **Sound Out → Bluetooth → Device Selection** (or Device List) on the TV using the phone's arrows and OK.
+5. Select your device and connect. Listen through it to confirm the TV audio works.
+6. Test **Use TV speakers**, then **Use paired Bluetooth device**. Use **Refresh output** after making changes on the TV. A reported Bluetooth route alone is not proof of an earbud connection.
+7. Check that OK/profile selection, Volume Down, and the existing Keyboard options still work.
 
-Search text is sent directly from the iPhone to the TV, which uses YouTube to perform the search. The app does not log queries or read the TV field's contents. The phone draft is held only while the keyboard sheet is open. TV field mode clears acknowledged inserted text to avoid duplication; YouTube mode retains the query.
+The device list and full settings remain on the TV. The phone provides controls for those real menus; it does not reproduce every setting or scan nearby Bluetooth devices. Audio travels from the TV directly to the selected device. Compatibility and menu details depend on the TV. Direct sound-output shortcuts may be unavailable on some firmware; the TV's Sound menu is the fallback.
+
+For the v1.4 YouTube search option, open **Keyboard → YouTube**, type a query, and tap **Search YouTube on TV** without waiting for field detection. If YouTube opens only Home, try **Compatibility search** once. For supported native fields, choose **TV field**, focus the actual field on the TV, and wait for **TV text field ready**. YouTube field detection was confirmed not to work on this setup in v1.3; the direct search route still needs physical verification.
+
+Search text goes directly from the iPhone to the TV. Queries are not logged by the app; phone drafts exist only while the keyboard sheet is open. Keep your existing pairing and app installed while updating.
 
 ## 1. Get the project from GitHub
 
-Already completed: the source is in the public repository [Asun250/asun-remote](https://github.com/Asun250/asun-remote). Skip to step 3 to install v1.4. The repository/build instructions below are for rebuilding or moving the project later.
+Already completed: the source is in the public repository [Asun250/asun-remote](https://github.com/Asun250/asun-remote). Skip to step 3 to install v1.5. The repository/build instructions below are for rebuilding or moving the project later.
 
 Put the contents of the extracted **AsunRemote** folder at the repository root. The root must contain all of these:
 

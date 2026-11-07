@@ -180,6 +180,32 @@ actor LGTVClient {
         _ = try await request("system.launcher/launch", payload: payload)
     }
 
+    func openTVSettings(_ section: TVSettingsSection) async throws {
+        _ = try await request("system.launcher/launch", payload: section.launchPayload)
+    }
+
+    func soundOutput() async throws -> TVAudioStatus {
+        let payload = try await request("com.webos.service.apiadapter/audio/getSoundOutput")
+        return try TVAudioStatus(payload)
+    }
+
+    func changeSoundOutput(_ output: TVAudioOutput) async throws -> TVAudioChangeResult {
+        let current = generation
+        _ = try await request("com.webos.service.apiadapter/audio/changeSoundOutput",
+                              payload: ["output": .string(output.rawValue)])
+        guard current == generation, isConnected else { throw RemoteError.disconnected }
+        do {
+            let status = try await soundOutput()
+            guard current == generation, isConnected else { throw RemoteError.disconnected }
+            return .reported(status)
+        } catch {
+            guard current == generation, isConnected else { throw RemoteError.disconnected }
+            // A read failure after the write acknowledgement is partial success,
+            // not a reason to repeat the write or claim the earbuds connected.
+            return .acceptedUnverified(error.localizedDescription)
+        }
+    }
+
     private func requireTextField() async throws {
         let state = try await keyboardState()
         guard state.focused == true else {

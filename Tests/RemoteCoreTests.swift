@@ -539,6 +539,138 @@ final class RemoteCoreTests: XCTestCase {
         XCTAssertNil(apps.first { $0.id == "other.app" }?.youTubeSearchParameter)
     }
 
+    func testSettingsLaunchUsesTVMenusWithoutChangingSettings() async throws {
+        let socket = FakeSocket { text, socket in try await keyboardReply(text, socket) }
+        let client = LGTVClient(factory: { _ in socket })
+        _ = try await client.connect(to: endpoint(), clientKey: nil)
+        for section in [TVSettingsSection.sound, .all, .safety] {
+            try await client.openTVSettings(section)
+        }
+        let requests = try await socket.sent.map(decode).filter { $0.type == "request" }
+        XCTAssertEqual(requests.count, 3)
+        XCTAssertTrue(requests.allSatisfy { $0.uri == "ssap://system.launcher/launch" })
+        XCTAssertEqual(requests[0].payload, ["id": .string("com.palm.app.settings"),
+            "params": .object(["target": .string("sound")])])
+        XCTAssertEqual(requests[1].payload, ["id": .string("com.palm.app.settings")])
+        XCTAssertEqual(requests[2].payload, requests[1].payload)
+        await client.disconnect()
+    }
+
+    func testRejectedSettingsLaunchDoesNotRetryOrSendNavigation() async throws {
+        let socket = FakeSocket { text, socket in
+            let request = try decode(text)
+            if request.type == "register" { try await registered(text, socket); return }
+            await socket.push(try TVEnvelope(type: "response", id: request.id,
+                payload: ["returnValue": .bool(false), "errorText": .string("Settings unavailable")]).text())
+        }
+        let client = LGTVClient(factory: { _ in socket })
+        _ = try await client.connect(to: endpoint(), clientKey: nil)
+        do { try await client.openTVSettings(.picture); XCTFail("Expected rejection") }
+        catch { XCTAssertEqual(error.localizedDescription, "Settings unavailable") }
+        let requests = try await socket.sent.map(decode)
+        XCTAssertEqual(requests.map(\.type), ["register", "request"])
+        let connected = await client.isConnected
+        XCTAssertTrue(connected)
+        await client.disconnect()
+    }
+
+    func testBluetoothOutputWaitsForAcknowledgementBeforeReadback() async throws {
+        let socket = FakeSocket { text, socket in
+            let request = try decode(text)
+            if request.type == "register" { try await registered(text, socket); return }
+            if request.uri?.hasSuffix("getSoundOutput") == true {
+                await socket.push(try TVEnvelope(type: "response", id: request.id,
+                    payload: ["returnValue": .bool(true), "soundOutput": .string("bt_soundbar")]).text())
+            }
+        }
+        let client = LGTVClient(factory: { _ in socket })
+        _ = try await client.connect(to: endpoint(), clientKey: nil)
+        let changing = Task { try await client.changeSoundOutput(.bluetooth) }
+        try await socket.waitForSent(2)
+        let before = try await socket.sent.map(decode)
+        XCTAssertEqual(before.count, 2)
+        XCTAssertEqual(before.last?.uri, "ssap://com.webos.service.apiadapter/audio/changeSoundOutput")
+        XCTAssertEqual(before.last?.payload, ["output": .string("bt_soundbar")])
+        await socket.push(try TVEnvelope(type: "response", id: before.last?.id,
+            payload: ["returnValue": .bool(true)]).text())
+        switch try await changing.value {
+        case .reported(let status): XCTAssertEqual(status.output, .bluetooth)
+        case .acceptedUnverified: XCTFail("Expected the reported output")
+        }
+        let after = try await socket.sent.map(decode)
+        XCTAssertEqual(after.count, 3)
+        XCTAssertEqual(after.last?.uri, "ssap://com.webos.service.apiadapter/audio/getSoundOutput")
+        await client.disconnect()
+    }
+
+    func testRejectedAudioChangeDoesNotReadOrRetry() async throws {
+        let socket = FakeSocket { text, socket in
+            let request = try decode(text)
+            if request.type == "register" { try await registered(text, socket); return }
+            await socket.push(try TVEnvelope(type: "error", id: request.id, error: "403 Output unavailable").text())
+        }
+        let client = LGTVClient(factory: { _ in socket })
+        _ = try await client.connect(to: endpoint(), clientKey: nil)
+        do { _ = try await client.changeSoundOutput(.tvSpeakers); XCTFail("Expected rejection") }
+        catch { XCTAssertTrue(error.localizedDescription.contains("403")) }
+        let requests = try await socket.sent.map(decode)
+        XCTAssertEqual(requests.map(\.type), ["register", "request"])
+        XCTAssertEqual(requests.last?.payload, ["output": .string("tv_speaker")])
+        await client.disconnect()
+    }
+
+    func testAcknowledgedAudioChangeWithReadFailureStaysUnverified() async throws {
+        let socket = FakeSocket { text, socket in
+            let request = try decode(text)
+            if request.type == "register" { try await registered(text, socket); return }
+            if request.uri?.hasSuffix("getSoundOutput") == true {
+                await socket.push(try TVEnvelope(type: "error", id: request.id, error: "Read unavailable").text())
+            } else {
+                await socket.push(try TVEnvelope(type: "response", id: request.id,
+                    payload: ["returnValue": .bool(true)]).text())
+            }
+        }
+        let client = LGTVClient(factory: { _ in socket })
+        _ = try await client.connect(to: endpoint(), clientKey: nil)
+        switch try await client.changeSoundOutput(.bluetooth) {
+        case .reported: XCTFail("Must not claim a confirmed output")
+        case .acceptedUnverified(let reason): XCTAssertEqual(reason, "Read unavailable")
+        }
+        let requests = try await socket.sent.map(decode).filter { $0.type == "request" }
+        XCTAssertEqual(requests.count, 2)
+        XCTAssertEqual(requests.filter { $0.uri?.hasSuffix("changeSoundOutput") == true }.count, 1)
+        await client.disconnect()
+    }
+
+    func testAudioStatusDistinguishesKnownUnknownAndMissingOutputs() throws {
+        XCTAssertEqual(try TVAudioStatus(["soundOutput": .string("tv_speaker")]).output, .tvSpeakers)
+        XCTAssertEqual(try TVAudioStatus(["soundOutput": .string("bt_soundbar")]).output, .bluetooth)
+        let other = try TVAudioStatus(["soundOutput": .string("external_speaker")])
+        XCTAssertNil(other.output)
+        XCTAssertEqual(other.title, "Other TV audio output")
+        let malformed: [TVPayload] = [[:], ["soundOutput": .string("")], ["soundOutput": .bool(true)]]
+        for payload in malformed {
+            XCTAssertThrowsError(try TVAudioStatus(payload))
+        }
+    }
+
+    func testAudioReadbackShowsActualOutputWhenTVKeepsAnotherRoute() async throws {
+        let socket = FakeSocket { text, socket in
+            let request = try decode(text)
+            if request.type == "register" { try await registered(text, socket); return }
+            var payload: TVPayload = ["returnValue": .bool(true)]
+            if request.uri?.hasSuffix("getSoundOutput") == true { payload["soundOutput"] = .string("tv_speaker") }
+            await socket.push(try TVEnvelope(type: "response", id: request.id, payload: payload).text())
+        }
+        let client = LGTVClient(factory: { _ in socket })
+        _ = try await client.connect(to: endpoint(), clientKey: nil)
+        switch try await client.changeSoundOutput(.bluetooth) {
+        case .reported(let status): XCTAssertEqual(status.output, .tvSpeakers)
+        case .acceptedUnverified: XCTFail("TV did report its actual output")
+        }
+        await client.disconnect()
+    }
+
     func testReconnectDoesNotReuseTheOldKeyboardFocus() async throws {
         let first = FakeSocket { text, socket in try await keyboardReply(text, socket) }
         let second = FakeSocket { text, socket in try await keyboardReply(text, socket, focused: false) }

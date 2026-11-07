@@ -23,6 +23,10 @@ final class RemoteModel: ObservableObject {
     @Published private(set) var keyboardProblem: String?
     @Published private(set) var keyboardNotice: String?
     @Published private(set) var youtubeNotice: String?
+    @Published private(set) var settingsBusy = false
+    @Published private(set) var settingsNotice: String?
+    @Published private(set) var audioStatus: TVAudioStatus?
+    @Published private(set) var audioProblem: String?
 
     var connected: Bool { phase == .connected }
     var pairing: Bool { phase == .pairing }
@@ -161,6 +165,76 @@ final class RemoteModel: ObservableObject {
 
     func selectInput(_ input: TVInput) {
         enqueue { connection in _ = try await connection.request("tv/switchInput", payload: ["inputId": .string(input.id)]) }
+    }
+
+    func openTVSettings(_ section: TVSettingsSection) async {
+        guard connected, !settingsBusy else { return }
+        let id = connectionID
+        settingsBusy = true
+        settingsNotice = nil
+        let operation = enqueue { [weak self] connection in
+            do {
+                try await connection.openTVSettings(section)
+                guard let self, id == self.connectionID else { return }
+                self.settingsNotice = section.acceptedMessage
+            } catch {
+                guard let self, id == self.connectionID else { return }
+                self.settingsNotice = "Could not open TV settings. \(self.friendlyError(error)) Try TV menu below, then select All Settings on the TV."
+            }
+        }
+        await operation?.value
+        if id == connectionID { settingsBusy = false }
+    }
+
+    func refreshSoundOutput() async {
+        guard connected, !settingsBusy else { return }
+        let id = connectionID
+        settingsBusy = true
+        audioStatus = nil
+        audioProblem = nil
+        let operation = enqueue { [weak self] connection in
+            do {
+                let status = try await connection.soundOutput()
+                guard let self, id == self.connectionID else { return }
+                self.audioStatus = status
+            } catch {
+                guard let self, id == self.connectionID else { return }
+                self.audioProblem = self.friendlyError(error)
+            }
+        }
+        await operation?.value
+        if id == connectionID { settingsBusy = false }
+    }
+
+    func setSoundOutput(_ output: TVAudioOutput) async {
+        guard connected, !settingsBusy else { return }
+        let id = connectionID
+        settingsBusy = true
+        settingsNotice = nil
+        audioProblem = nil
+        let operation = enqueue { [weak self] connection in
+            do {
+                let result = try await connection.changeSoundOutput(output)
+                guard let self, id == self.connectionID else { return }
+                switch result {
+                case .reported(let status):
+                    self.audioStatus = status
+                    self.settingsNotice = status.output == output
+                        ? "TV reports \(status.title). \(output == .bluetooth ? "Check the TV device list and listen through your earbuds to confirm the connection." : "Check that sound plays through your TV.")"
+                        : "Request accepted, but the TV currently reports \(status.title). Check Sound Out on the TV, then refresh."
+                case .acceptedUnverified(let reason):
+                    self.audioStatus = nil
+                    self.audioProblem = reason
+                    self.settingsNotice = "The TV accepted the sound-output request, but its current output could not be checked. Check Sound Out on the TV before trying again."
+                }
+            } catch {
+                guard let self, id == self.connectionID else { return }
+                self.audioStatus = nil
+                self.settingsNotice = "Sound-output change was not confirmed. \(self.friendlyError(error)) Use Sound settings on the TV if this control is unavailable."
+            }
+        }
+        await operation?.value
+        if id == connectionID { settingsBusy = false }
     }
 
     func watchKeyboard() async {
@@ -382,6 +456,10 @@ final class RemoteModel: ObservableObject {
         keyboardProblem = nil
         keyboardNotice = nil
         youtubeNotice = nil
+        settingsBusy = false
+        settingsNotice = nil
+        audioStatus = nil
+        audioProblem = nil
         connectionTask?.cancel(); connectionTask = nil
         monitorTask?.cancel(); monitorTask = nil
         commandTail?.cancel(); commandTail = nil

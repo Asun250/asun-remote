@@ -20,6 +20,8 @@ struct ContentView: View {
             remote.tabItem { Label("Remote", systemImage: "appletvremote.gen1") }.tag(0)
             library(isApps: true).tabItem { Label("Apps", systemImage: "square.grid.2x2") }.tag(1)
             library(isApps: false).tabItem { Label("Inputs", systemImage: "cable.connector") }.tag(2)
+            TVSettingsView(model: model, openConnection: { settings = true })
+                .tabItem { Label("Settings", systemImage: "gearshape") }.tag(3)
         }
         .tint(RemoteTheme.accent)
         .sheet(isPresented: $settings) { ConnectionView(model: model) }

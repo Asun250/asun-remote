@@ -63,7 +63,7 @@ struct ConnectionView: View {
                 }
                 Section("About this version") {
                     Text("Works locally. No subscription, ads, LG login, or cloud account is used by this app.")
-                    Text("Version 1.4 adds direct YouTube search without TV field detection. Power-on remains experimental; a wake request is separate from a confirmed TV connection.")
+                    Text("Version 1.5 adds TV settings and Bluetooth audio controls. Pair audio devices using the TV’s menus and the phone’s arrows. Power-on remains experimental; a wake request is separate from a confirmed TV connection.")
                     Text("A soundbar or receiver may control volume separately. Individual TV apps may limit playback or keyboard commands.")
                 }.font(.footnote).foregroundStyle(.secondary)
                 if !model.address.isEmpty {

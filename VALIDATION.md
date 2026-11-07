@@ -1,8 +1,17 @@
-# Validation — Asun Remote 1.4
+# Validation — Asun Remote 1.5
+
+## Version 1.5: TV settings and Bluetooth audio
+
+Added a native Settings tab with the categories shown in the user's TV photo and a persistent navigation pad. Settings launches use the paired app-launch API; Safety opens All Settings for manual selection. Bluetooth discovery and pairing remain in the TV's actual Sound Out device picker. The phone provides guided navigation and two sound-output shortcuts, with readback after an acknowledged change. Unknown, missing, rejected, and unverified outputs are kept distinct. State is cleared on reconnect; opening the Bluetooth page only reads status.
+
+Seven new protocol tests cover settings launches without writes, rejected launches without retries/navigation, audio acknowledgement/readback ordering, rejected audio changes, partial success with failed readback, missing/unknown output parsing, and the TV retaining another output. Total planned core test count: 39. Native build and test results will be recorded after the cloud run.
+
+No physical pairing, Bluetooth audio, category shortcut, or iPhone layout test has yet been performed for v1.5. The full TV settings and device list are not mirrored on the phone. An accepted launch is not proof of the page displayed, and a Bluetooth route report is not proof of an earbud connection. These limits are visible in the app and installation instructions.
+
 
 Updated November 7, 2026 (UTC). Target family: LG webOS UM6970PUA.
 
-## Current update: v1.4
+## Version 1.4 history
 
 The user installed v1.3 and confirmed that YouTube still does not expose a text field, including after Refresh. Version 1.4 adds a default YouTube destination in the keyboard sheet. It launches `youtube.leanback.v4` with a percent-encoded `q=` query in `contentTarget`, using the installed app's recognized `inAppSearchParams` metadata when available. An explicit Compatibility search button tries the other known parameter (`target` or `contentTarget`); it never retries automatically. The LG-native TV field mode retains its focused-field guard.
 
@@ -69,6 +78,8 @@ The previous Linux Swift toolchain is no longer available in this workspace. Val
 The user explicitly approved uploading the update to the existing private Asun250/asun-remote repository and running its existing iPhone cloud build. The upload and build completed successfully.
 
 ## Physical verification still required
+
+- Version 1.5 Settings categories, fallback TV menu, Bluetooth discovery/pairing through the TV device picker, both audio-output shortcuts, actual audible output, and native layout/accessibility.
 
 - Version 1.4 direct YouTube results for both query formats; native layout and accessibility. LG-browser field readiness, insertion and submission still need verification. The user confirmed v1.2 working and v1.3 YouTube field detection failing.
 - Keychain/TLS persistence and reliable behavior of all remote commands on this TV.
