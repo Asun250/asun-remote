@@ -2,13 +2,15 @@
 
 You do not need to own a Mac. A cloud Mac builds the app once, then **Sideloadly on Windows** signs and installs it on your iPhone. After installation, the remote communicates directly with your LG TV. Your PC is only needed for installation and periodic signing refreshes.
 
-**Version 1.1:** adds an experimental power-on test. Install the newly built IPA over the existing app using the **same Apple account and bundle identifier**. A cloud build for the update is pending. The earlier v1.0 installation reached Done in Sideloadly; opening, TV pairing, and physical standby wake are not yet verified.
+**Version 1.1:** adds an experimental power-on test. Install the newly built IPA over the existing app using the **same Apple account and bundle identifier**. The [updated cloud build](https://github.com/Asun250/asun-remote/actions/runs/42345317807) passed all 19 tests and the complete iPhone Release build. The earlier v1.0 installation reached Done in Sideloadly; opening, TV pairing, and physical standby wake are not yet verified.
 
-For an update, choose the new `AsunRemote-unsigned.ipa` in Sideloadly and press Start. Do not delete the installed app first. The checksum for each build is included in `dist/SHA256SUMS.txt`. On Mark's PC, use the IPA directly in Downloads once the new build has been copied there; older AsunRemote-Setup folders may contain an earlier build.
+For an update, choose the new `AsunRemote-unsigned.ipa` in Sideloadly and press Start. Do not delete the installed app first. The checksum for each build is included in `dist/SHA256SUMS.txt`. On Mark's PC, choose **Downloads → AsunRemote-v1.1.ipa** in Sideloadly. This distinct filename avoids accidentally reinstalling the old build. Older AsunRemote-Setup folders may contain v1.0.
+
+Version 1.1.0 (build 2) IPA SHA-256: `361fed2f7047209ce9e718bd05cadd7cc0a3e3f1398c8ca5d92a8d4464757fbc`.
 
 ## 1. Put the project in a private GitHub repository
 
-Already completed: the source is in the private repository [Asun250/asun-remote](https://github.com/Asun250/asun-remote). Use step 3 after the updated cloud build succeeds. The repository/build instructions below are for rebuilding or moving the project later.
+Already completed: the source is in the private repository [Asun250/asun-remote](https://github.com/Asun250/asun-remote). Skip to step 3 to install v1.1. The repository/build instructions below are for rebuilding or moving the project later.
 
 Put the contents of the extracted **AsunRemote** folder at the repository root. The root must contain all of these:
 

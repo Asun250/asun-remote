@@ -8,9 +8,9 @@ Version 1.1 adds MAC parsing and a standard 102-byte Wake-on-LAN packet; a nonbl
 
 Four new tests cover MAC normalization and packet bytes, malformed/multicast MAC rejection, same-LAN constraints including a /23 boundary, and invalid/point-to-point masks. The existing 15 tests cover pairing, cancellation, request ordering/timeouts, navigation, reconnect isolation, and TV response parsing.
 
-The previous Linux Swift toolchain is no longer available in this workspace. Validation for this update will use the cloud Mac's real Swift compiler, 19 core tests, and the complete iOS Release build. Results are pending; do not substitute the previous v1.0 artifact for v1.1. Local structural checks passed for both plists, the 11 app/core source paths, Xcode object references, version 1.1.0 (2), and the count of 19 test methods. These checks do not compile Swift or run the tests.
+The previous Linux Swift toolchain is no longer available in this workspace. Validation used the cloud Mac's real Swift compiler. All **19 core tests passed with zero failures** (15 existing + 4 wake tests), and the complete iOS Release build succeeded. Local structural checks passed for both plists, the 11 app/core source paths, Xcode object references, version 1.1.0 (2), and the count of 19 test methods. These checks do not compile Swift or run the tests.
 
-The user explicitly approved uploading the update to the existing private Asun250/asun-remote repository and running its existing iPhone cloud build. The updated build results will be recorded below.
+The user explicitly approved uploading the update to the existing private Asun250/asun-remote repository and running its existing iPhone cloud build. The upload and build completed successfully.
 
 ## Physical verification still required
 
@@ -27,3 +27,14 @@ Do not report reliable power on, off, or complete remote replacement as hardware
 The [v1.0 cloud run](https://github.com/Asun250/asun-remote/actions/runs/42342321883), commit `09f1ec6f2072fdd5112e82fd927f84948c66638a`, passed 15 core tests and the full unsigned iPhoneOS 18.5 arm64 build with Xcode 16.4 / Apple Swift 6.1.2. The original IPA SHA-256 was `218f802d84b8de5327c1dd7d073b2050689db5fb21088fb53902c87afc6c9a04`.
 
 The user connected the iPhone through a rear PC USB port and provided a Sideloadly screenshot showing Done / 100%. They enabled Developer Mode and restarted the phone. The app opening and TV pairing have not yet been confirmed.
+
+## Successful v1.1 build
+
+- [Cloud run #3](https://github.com/Asun250/asun-remote/actions/runs/42345317807) built source commit `e5c0da8420704e144c12aa576ebb68215998dbeb`.
+- Xcode 16.4, Apple Swift 6.1.2; 19 tests, zero failures; full arm64 iPhone app compiled.
+- Artifact archive SHA-256: `0f37d03dd9ff98c2fdf24164a0c260b8977df1ded5b325b6e0aa553b25458f34`.
+- IPA SHA-256: `361fed2f7047209ce9e718bd05cadd7cc0a3e3f1398c8ca5d92a8d4464757fbc`; 326,401 bytes.
+- Archive and IPA integrity checked. Embedded bundle identifier `com.markanthony.asunremote`, version `1.1.0`, build `2`, iPhoneOS platform, minimum iOS 17.0, and arm64 Mach-O executable confirmed.
+- The compiled IPA is unchanged when packaging the updated Windows instructions.
+
+These results prove compilation and simulated protocol behavior, not physical standby wake. No wake test has yet been performed on the user's TV.

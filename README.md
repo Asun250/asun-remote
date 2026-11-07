@@ -2,7 +2,7 @@
 
 A native SwiftUI remote-control project for Mark Anthony’s **LG webOS UM6970PUA**, identified from the TV photo showing firmware **05.40.97**. iPhone with iOS 17 or later. No third-party app dependencies.
 
-**Version 1.1 adds an experimental power-on test.** Power off is implemented; successful standby wake on the physical TV is not yet verified. The app sends a direct unicast Wake-on-LAN packet and never labels packet transmission as a confirmed power-on. A new cloud build is required for this update.
+**Version 1.1 adds an experimental power-on test.** Power off is implemented; successful standby wake on the physical TV is not yet verified. The app sends a direct unicast Wake-on-LAN packet and never labels packet transmission as a confirmed power-on. The [v1.1 cloud build](https://github.com/Asun250/asun-remote/actions/runs/42345317807) passed all **19 tests** and compiled the complete iPhone app with Xcode 16.4. The unsigned IPA is ready for Sideloadly; TV pairing and actual wake remain unverified.
 
 **Only have Windows? Start with [WINDOWS_SETUP.md](WINDOWS_SETUP.md).** Sideloadly on Windows can sign and install the IPA. The project includes a manual GitHub Actions cloud-Mac build and an unsigned IPA packaging script for future updates.
 
