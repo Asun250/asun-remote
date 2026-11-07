@@ -4,7 +4,7 @@ A native SwiftUI remote-control project for Mark Anthony’s **LG webOS UM6970PU
 
 **Version 1.5 adds a Settings tab and TV Bluetooth audio controls.** It opens the TV's real Picture, Sound, Channels, Connection, General, Safety, and Accessibility menus. A compact phone remote stays available while you use those menus. The Bluetooth page guides pairing headphones, earbuds, or speakers to the **TV** and offers shortcuts for the paired Bluetooth device and TV speakers.
 
-The settings and available-device list appear on the TV, not as a complete live copy on the phone. Safety opens All Settings for manual selection. Firmware may ignore category shortcuts; use **TV menu** and select All Settings if needed. New menus and Bluetooth behavior still need physical verification on this TV.
+The settings and available-device list appear on the TV, not as a complete live copy on the phone. Safety opens All Settings for manual selection. Firmware may ignore category shortcuts; use **TV menu** and select All Settings if needed. All **39 core tests passed** and the complete v1.5 iPhone build succeeded. New menus and Bluetooth behavior still need physical verification on this TV.
 
 **Version 1.4 adds a separate YouTube search option.** Open Keyboard, leave **YouTube** selected, type on your iPhone, then tap **Search YouTube on TV**. It asks the YouTube TV app to open search results directly; it does not type into the currently focused search box and does not wait for LG field detection. If YouTube opens only its home screen, try **Compatibility search** once with the retained query.
 

@@ -4,12 +4,22 @@
 
 Added a native Settings tab with the categories shown in the user's TV photo and a persistent navigation pad. Settings launches use the paired app-launch API; Safety opens All Settings for manual selection. Bluetooth discovery and pairing remain in the TV's actual Sound Out device picker. The phone provides guided navigation and two sound-output shortcuts, with readback after an acknowledged change. Unknown, missing, rejected, and unverified outputs are kept distinct. State is cleared on reconnect; opening the Bluetooth page only reads status.
 
-Seven new protocol tests cover settings launches without writes, rejected launches without retries/navigation, audio acknowledgement/readback ordering, rejected audio changes, partial success with failed readback, missing/unknown output parsing, and the TV retaining another output. Total planned core test count: 39. Native build and test results will be recorded after the cloud run.
+Seven new protocol tests cover settings launches without writes, rejected launches without retries/navigation, audio acknowledgement/readback ordering, rejected audio changes, partial success with failed readback, missing/unknown output parsing, and the TV retaining another output. All **39 core tests passed with zero failures**, and the complete Release iPhone build succeeded. These are simulated protocol tests and a real iPhone-target compilation, not physical-TV testing.
 
 No physical pairing, Bluetooth audio, category shortcut, or iPhone layout test has yet been performed for v1.5. The full TV settings and device list are not mirrored on the phone. An accepted launch is not proof of the page displayed, and a Bluetooth route report is not proof of an earbud connection. These limits are visible in the app and installation instructions.
 
 
 Updated November 7, 2026 (UTC). Target family: LG webOS UM6970PUA.
+
+## Successful v1.5 build
+
+- [Cloud run #7](https://github.com/Asun250/asun-remote/actions/runs/42392814013) built source commit `ccd821a4149a1f16e6b03515bd7543f0e29b8bc1`.
+- Xcode 16.4 / Apple Swift 6.1.2; 39 core tests, zero failures; unsigned Release iPhone build successful.
+- Artifact ZIP: 430,873 bytes; SHA-256 `ac1ba809fbcf6fc31479ad330a1ccef6b81624444252deef74c7097662142ce4`.
+- IPA: 430,839 bytes; SHA-256 `6cd730863c24a5d4fe312bb3e694b5732834f5fd2c92df8de4f547e0fd72e4cf`.
+- Archive integrity, embedded version 1.5.0 (6), bundle identifier `com.markanthony.asunremote`, iPhoneOS platform, minimum iOS 17.0, and arm64 Mach-O executable verified.
+- The distributed ZIP is the unchanged cloud artifact. PC copy was not completed because the PC connection was offline; the ZIP is available for download and manual extraction/install.
+- The source remains in the public GitHub repository. No new permissions or credentials were added for Bluetooth audio.
 
 ## Version 1.4 history
 
