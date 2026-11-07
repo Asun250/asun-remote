@@ -2,11 +2,11 @@
 
 A native SwiftUI remote-control project for Mark Anthony’s **LG webOS UM6970PUA**, identified from the TV photo showing firmware **05.40.97**. iPhone with iOS 17 or later. No third-party app dependencies.
 
-**This repository contains source code. An unsigned iPhone IPA is now available from the [successful cloud build](https://github.com/Asun250/asun-remote/actions/runs/42342321883).** The complete iPhone app compiled with Xcode 16.4 and all 15 protocol tests passed on the cloud Mac. Signing, device installation, on-screen layout, and real pairing with your TV still need verification.
+**Version 1.1 adds an experimental power-on test.** Power off is implemented; successful standby wake on the physical TV is not yet verified. The app sends a direct unicast Wake-on-LAN packet and never labels packet transmission as a confirmed power-on. A new cloud build is required for this update.
 
 **Only have Windows? Start with [WINDOWS_SETUP.md](WINDOWS_SETUP.md).** Sideloadly on Windows can sign and install the IPA. The project includes a manual GitHub Actions cloud-Mac build and an unsigned IPA packaging script for future updates.
 
-## What the first version implements
+## What the app implements
 
 - Direct connection from iPhone to TV on your home network; no PC helper.
 - On-screen TV pairing approval, with pairing key stored in iPhone Keychain.
@@ -16,9 +16,10 @@ A native SwiftUI remote-control project for Mark Anthony’s **LG webOS UM6970PU
 - Installed apps and actual input names read from the TV.
 - Text entry for TV apps that support remote typing.
 - Power **off**, with an on-screen confirmation.
+- Experimental **Try turning on** control, with per-TV MAC storage and bounded local unicast wake packets.
 - Connection timeouts, command errors, and reconnect after returning to the app.
 
-Power **on** from standby is not included. Turn the TV on with the physical remote for now. Volume routed through a soundbar/receiver, individual app playback, and text-entry behavior need testing on your setup. This project makes no claim of having been tested on the physical UM6970PUA yet.
+Power **on** must be tested before relying on it. See the setup and limitations below. Volume routed through a soundbar/receiver, individual app playback, and text-entry behavior need testing on your setup. This project makes no claim of having been tested on the physical UM6970PUA yet.
 
 ## Install using a Mac
 
@@ -46,6 +47,18 @@ The address in the input placeholder is an example, not your TV’s actual addre
 
 If Secure cannot connect, try the explicit **Legacy compatibility** option. That option uses unencrypted WebSocket traffic on the local network. It has its own saved pairing and is never selected automatically. If your router changes the TV’s IP address, update it and pair again; a router DHCP reservation can keep the address stable.
 
+## Set up and test power on
+
+1. Pair with the TV while it is on. Confirm normal controls work first.
+2. On this LG generation, look for **Settings → All Settings → Connection → Mobile TV On → Turn on via Wi-Fi**. Some firmware puts Mobile TV On under General. Enable it and leave the TV plugged in.
+3. Find the **MAC address of the TV's active network interface** in its network details (Wi-Fi MAC when connected by Wi-Fi; wired MAC when connected by Ethernet). In Asun Remote's Connection settings, enter it under Power-on test. The MAC is saved for that TV IP address.
+4. Have access to the TV's own physical power button while testing. Turn it off, then tap **Try turning on** on the Remote screen. A sent request is not confirmation. Watch the actual screen; when it lights up, tap Reconnect.
+5. Repeat after at least 15 minutes of standby, and after overnight standby. A successful immediate off/on test does not prove long-term reliability.
+
+**Limitations:** This personal build sends UDP unicast to port 9 of the entered TV IP, restricted to a directly attached IPv4 LAN. It does not send broadcast or multicast. Apple requires the managed multicast networking entitlement for broadcast/multicast on iOS; this build does not request or bypass that entitlement. Unicast wake depends on the TV/interface accepting the packet and on local address resolution (ARP). It may fail once cached address information expires or the TV enters deeper standby. Sending successfully only means the iPhone accepted the datagram.
+
+If wake fails, use LG ThinQ to check whether the TV can wake with its supported app. Do not depend on this build to replace a broken power button until the standby tests pass. The PC is not required to send the app's wake attempt. Never unplug the TV for a wake test, and no router port forwarding is needed. A DHCP reservation can keep the configured TV IP stable.
+
 ## Troubleshooting
 
 | Symptom | What to check |
@@ -57,13 +70,14 @@ If Secure cannot connect, try the explicit **Legacy compatibility** option. That
 | TV controls work, but an app ignores playback | Use the directional pad to operate that app’s own controls. App behavior varies. |
 | Keyboard does nothing | First focus a TV search/text field; some TV apps block remote keyboard entry. |
 | Volume does not change | Check whether a soundbar/receiver is handling volume instead of the TV. |
-| TV is off | Wake it with the physical remote; this version does not send a standby wake packet. |
+| TV is off | Configure Mobile TV On and the active MAC, then use Try turning on. Wake remains unverified; use the TV’s physical button if it fails. |
+| Wake works immediately but fails later | Unicast/ARP or deeper standby may be the limit. Test LG ThinQ; do not treat this build as a reliable power-on replacement yet. |
 
 LG’s existing **LG ThinQ** app is an immediate alternative while the custom app is being signed and tested.
 
 ## Development and validation
 
-The `Package.swift` file exposes the same three core files compiled into the iPhone app. Run `swift test` to test them. On a Mac with Xcode, run `bash scripts/check-mac.sh` to run core tests and compile the iOS Simulator app without device signing.
+The `Package.swift` file exposes the same core files compiled into the iPhone app. Run `swift test` to test them. On a Mac with Xcode, run `bash scripts/check-mac.sh` to run core tests and compile the iOS Simulator app without device signing.
 
 `Tests/RemoteCoreTests.swift` uses simulated TV messages. These tests do not replace hardware pairing, iOS Keychain/TLS validation, or UI testing. See `VALIDATION.md` for the checks actually run during preparation.
 
@@ -77,7 +91,7 @@ Main code locations:
 
 ## Privacy and connection design
 
-No advertising, analytics, cloud relay, or LG account is used. Only the TV’s address/connection preference is stored in UserDefaults. Pairing credentials and the TV certificate are stored in the local, device-only Keychain.
+No advertising, analytics, cloud relay, or LG account is used. The TV’s address, connection preference, and per-IP wake MAC are stored locally in UserDefaults. Pairing credentials and the TV certificate are stored in the local, device-only Keychain.
 
 Secure mode uses port 3001. LG TVs can use self-signed certificates, so first-use trust is restricted to the exact private address the user entered. The certificate is persisted only after TV pairing succeeds, and later connections must match it. This is trust on first use; it does not independently prove TV identity on a hostile network. Legacy mode uses port 3000 and no encryption. Pointer socket URLs must retain the selected TV’s host, scheme, and port.
 
@@ -90,4 +104,5 @@ The app does not open router ports, disable phone security settings, or enable T
 - [Connect SDK webOS service documentation](https://connectsdk.com/en/latest/apis-ios/ios-webostvservice.html)
 - [LG Connect SDK protocol reference implementation](https://github.com/ConnectSDK/Connect-SDK-iOS-Core) — consulted for protocol behavior; this app is an independent Swift implementation and bundles no Connect SDK code.
 - [Apple: personal team and signing limitations](https://developer.apple.com/help/account/basics/about-your-developer-account)
+- [LG 2019-generation Mobile TV On guide](https://kr.eguide.lgappstv.com/manual/w19_mr/dvb/Contents/settings/connection/mobiletvon_e_c_a_t/eng/w45__settings__connection__mobiletvon_e_c_a_t__eng.html)
 - [Apple: local network privacy](https://developer.apple.com/documentation/technotes/tn3179-understanding-local-network-privacy)

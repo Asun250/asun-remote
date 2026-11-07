@@ -28,7 +28,7 @@ struct ContentView: View {
             Button("Turn off TV", role: .destructive) { model.powerOff() }
             Button("Cancel", role: .cancel) { }
         } message: {
-            Text("Use your physical remote to turn it back on. Standby wake is not included in this version.")
+            Text("Power-on from this app is still experimental. Keep the TV’s own power button available until you have tested wake from standby.")
         }
     }
 
@@ -105,12 +105,12 @@ struct ContentView: View {
                     Text("LG UM6970").font(.headline)
                     HStack(spacing: 6) {
                         Circle().fill(model.connected ? RemoteTheme.accent : Color.gray).frame(width: 6, height: 6)
-                        Text(model.connected ? "Connected · \(model.connectedAddress)" : model.pairing ? "Waiting for your TV…" : "Not connected")
+                        Text(model.connected ? "Connected · \(model.connectedAddress)" : model.waking ? "Sending wake request…" : model.pairing ? "Waiting for your TV…" : "Not connected")
                             .font(.caption).foregroundStyle(.secondary)
                     }
                 }
                 Spacer()
-                if model.pairing { ProgressView() }
+                if model.pairing || model.waking { ProgressView() }
                 else { Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary) }
             }
             .padding(18)
@@ -120,15 +120,24 @@ struct ContentView: View {
 
     private var setupHint: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(model.pairing ? "Check your TV screen" : "Your TV, one tap away.").font(.headline)
-            Text(model.pairing ? "Choose Allow or Accept if the TV asks to connect Asun Remote. Keep the app open." : "Turn on your LG TV and connect your iPhone to the same home network.")
+            Text(model.waking ? "Sending wake request" : model.pairing ? "Check your TV screen" : "Connect or wake your TV").font(.headline)
+            Text(model.waking ? "Keep the app open. Sending a request does not confirm that the TV has turned on." : model.pairing ? "Choose Allow or Accept if the TV asks to connect Asun Remote. Keep the app open." : "Connect while the TV is on. If it is in standby, you can test power on after setting up its MAC address.")
                 .font(.subheadline).foregroundStyle(.secondary)
-            if model.pairing {
+            if model.waking {
+                Button("Cancel wake request") { model.disconnect() }
+            } else if model.pairing {
                 Button("Cancel connection") { model.disconnect() }
             } else {
                 Button(model.address.isEmpty ? "Connect TV" : "Reconnect") {
                     if model.address.isEmpty { settings = true } else { model.connect() }
                 }.buttonStyle(.borderedProminent).foregroundStyle(RemoteTheme.background)
+                if !model.address.isEmpty {
+                    Button {
+                        if model.hasWakeAddress { model.tryPowerOn() } else { settings = true }
+                    } label: {
+                        Label(model.hasWakeAddress ? "Try turning on" : "Set up power on", systemImage: "power")
+                    }.buttonStyle(.bordered)
+                }
             }
         }.frame(maxWidth: .infinity, alignment: .leading)
     }

@@ -1,60 +1,29 @@
-# Validation — Asun Remote v1
+# Validation — Asun Remote 1.1
 
-Updated on November 6, 2026 (Pacific time). Target family: LG webOS UM6970PUA. An unsigned iPhone package has been built; device installation and TV pairing remain unverified.
+Updated November 6, 2026 (Pacific time). Target family: LG webOS UM6970PUA.
 
-## Completed
+## Current update
 
-| Check | Result |
-| --- | --- |
-| Core Swift package compilation | Passed with Swift 6.0.3, Swift 5 language mode, Linux. |
-| Automated core tests | **15 tests passed, 0 failures.** |
-| Core tests on macOS | **15 tests passed, 0 failures**, Apple Swift 6.1.2 with Xcode 16.4. |
-| Full iOS Release build | Passed against the iPhoneOS 18.5 SDK, arm64, minimum iOS 17.0. |
-| Unsigned IPA | Archive integrity and embedded Info.plist checked; iPhoneOS platform and arm64 executable confirmed. SHA-256 verified against the cloud-generated checksum. |
-| Parsing every iOS app Swift source | Passed using the Swift compiler frontend. This checks syntax, not Apple SDK type compatibility. |
-| Xcode project structure | Parsed with an independent OpenStep parser; all object and file references resolve, including all 9 app/core Swift files. |
-| App Info.plist and privacy manifest | Parsed successfully; local network permission text and local-only ATS exception are present. |
-| Shared Xcode scheme | XML parsed; target identifiers match the project. |
-| App icons | All 9 declared PNG files exist, with matching dimensions and opaque RGB pixels. |
-| Mac validation script | Shell syntax check passed. |
+Version 1.1 adds MAC parsing and a standard 102-byte Wake-on-LAN packet; a nonblocking, interface-bound UDP unicast sender; per-IP MAC storage; and an explicitly experimental power-on control accessible while disconnected. Three requests go to UDP port 9, 250 ms apart. Targets must be directly attached local IPv4 hosts; network, broadcast, self, off-subnet, point-to-point, and invalid-mask destinations are rejected. No multicast/broadcast entitlement is added.
 
-The tests exercise real core code with simulated TV socket messages: initial approval, refusal, saved-key reconnection, pairing timeout, command timeout and recovery, cancellation, disconnect during a command, old-connection shutdown during reconnect, out-of-order replies, failed commands, navigation framing, concurrent pointer setup, input/app parsing, volume response variants, and isolation of the TV’s network endpoint.
+Four new tests cover MAC normalization and packet bytes, malformed/multicast MAC rejection, same-LAN constraints including a /23 boundary, and invalid/point-to-point masks. The existing 15 tests cover pairing, cancellation, request ordering/timeouts, navigation, reconnect isolation, and TV response parsing.
 
-Command used for the successful package run:
+The previous Linux Swift toolchain is no longer available in this workspace. Validation for this update will use the cloud Mac's real Swift compiler, 19 core tests, and the complete iOS Release build. Results are pending; do not substitute the previous v1.0 artifact for v1.1. Local structural checks passed for both plists, the 11 app/core source paths, Xcode object references, version 1.1.0 (2), and the count of 19 test methods. These checks do not compile Swift or run the tests.
 
-```sh
-swift test -j 1 -Xswiftc -disable-batch-mode
-```
+The user explicitly approved uploading the update to the existing private Asun250/asun-remote repository and running its existing iPhone cloud build. The updated build results will be recorded below.
 
-The initial parallel compiler driver run failed in the container’s process environment. The subsequent single-job build and test run completed successfully. No app-code change was needed for that environment issue.
+## Physical verification still required
 
-## Not yet verified
+- App launch after Developer Mode is enabled; native layout and accessibility.
+- Pairing, Keychain/TLS persistence, and actual remote commands on this TV.
+- Wake request acceptance by the signed iOS app with Local Network permission.
+- Actual power-on after short standby, 15 minutes, and overnight. The app cannot infer screen power from successful UDP transmission. A later registered TV session confirms connectivity only.
+- Unicast wake can fail after ARP cache expiry or deeper standby. These limits remain even if all automated tests and compilation pass.
 
-- On-screen layout or VoiceOver behavior in an iOS Simulator or on an iPhone.
-- Keychain persistence and self-signed certificate handling on iOS.
-- The TV’s actual pairing prompt, navigation, app list, inputs, sound output, keyboard behavior, and firmware-specific permissions.
-- Signed device installation or TestFlight distribution.
+Do not report reliable power on, off, or complete remote replacement as hardware-verified until the user performs those checks. Use the TV's physical power button as fallback during testing.
 
-## Next verification on a Mac and TV
+## Prior build and installation evidence
 
-1. Run `bash scripts/check-mac.sh`, then install from Xcode following README.md.
-2. Pair using Secure mode while the TV is on. Reject one pairing request, then retry and accept it.
-3. Verify Volume +, Mute, Home, directional navigation, and OK.
-4. Open a real installed app, switch an input, and check playback/text input in apps that support them.
-5. Background and reopen the app; confirm the saved pairing reconnects.
-6. Disconnect Wi-Fi or turn off the TV; confirm the UI reports the dropped connection.
-7. If Secure is unsupported by the TV firmware, try explicit Legacy compatibility. Keep the chosen mode documented for this TV.
+The [v1.0 cloud run](https://github.com/Asun250/asun-remote/actions/runs/42342321883), commit `09f1ec6f2072fdd5112e82fd927f84948c66638a`, passed 15 core tests and the full unsigned iPhoneOS 18.5 arm64 build with Xcode 16.4 / Apple Swift 6.1.2. The original IPA SHA-256 was `218f802d84b8de5327c1dd7d073b2050689db5fb21088fb53902c87afc6c9a04`.
 
-Power-on/wake from standby is outside this version and must not be reported as working.
-
-## Windows installation follow-up
-
-Added a manual GitHub Actions workflow on `macos-15`, pinned to the image’s Xcode 16.4 installation, plus an unsigned arm64 IPA packaging script and Windows/Sideloadly instructions. Official GitHub action commit references were resolved from their current `v4` tags on November 6, 2026.
-
-The [second cloud run](https://github.com/Asun250/asun-remote/actions/runs/42342321883) succeeded for commit `09f1ec6f2072fdd5112e82fd927f84948c66638a`. It compiled the complete app and produced `AsunRemote-unsigned.ipa`. The first run caught an early access to a property wrapper during initialization; the saved address is now read into a local value before initializing connection intent.
-
-IPA SHA-256: `218f802d84b8de5327c1dd7d073b2050689db5fb21088fb53902c87afc6c9a04`.
-
-The IPA and Windows installation instructions have been copied to the Windows PC. Sideloadly and Apple's required web installers were downloaded from their vendor URLs. Apple account entry, installation approvals, and the USB phone connection require the user.
-
-The workflow YAML, manual-only trigger, minimal repository permissions, pinned actions, source paths, and build-script shell syntax were checked locally. The build script’s non-macOS guard was also exercised and returned the intended cloud-build guidance. These checks do not execute Xcode or validate an IPA.
+The user connected the iPhone through a rear PC USB port and provided a Sideloadly screenshot showing Done / 100%. They enabled Developer Mode and restarted the phone. The app opening and TV pairing have not yet been confirmed.

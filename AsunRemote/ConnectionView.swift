@@ -18,10 +18,10 @@ struct ConnectionView: View {
                     TextField("TV IP address · e.g. 192.168.1.50", text: $model.address)
                         .keyboardType(.decimalPad).textInputAutocapitalization(.never).autocorrectionDisabled()
                         .accessibilityLabel("TV IP address")
-                        .disabled(model.pairing || model.connected)
+                        .disabled(model.pairing || model.connected || model.waking)
                     Picker("Connection", selection: $model.mode) {
                         ForEach(ConnectionMode.allCases, id: \.self) { mode in Text(mode.label).tag(mode) }
-                    }.disabled(model.pairing || model.connected)
+                    }.disabled(model.pairing || model.connected || model.waking)
                     if model.mode == .legacy {
                         Text("Legacy uses an unencrypted connection on your home Wi-Fi. Choose it only if Secure cannot connect.")
                             .font(.caption).foregroundStyle(.secondary)
@@ -31,6 +31,9 @@ struct ConnectionView: View {
                     if model.connected {
                         Label("Connected to \(model.connectedAddress)", systemImage: "checkmark.circle.fill").foregroundStyle(.green)
                         Button("Disconnect") { model.disconnect() }
+                    } else if model.waking {
+                        HStack { ProgressView(); Text("Sending a wake request…") }
+                        Button("Cancel") { model.disconnect() }
                     } else if model.pairing {
                         HStack { ProgressView(); Text("Check the TV for an Allow / Accept prompt.") }
                         Button("Cancel connection") { model.disconnect() }
@@ -44,9 +47,23 @@ struct ConnectionView: View {
                     Text("Enter the IP address, not the DNS server or gateway. If the TV offers LG Connect Apps or Mobile TV On, enable it. Allow Local Network access when your iPhone asks.")
                     Text("You only need to approve the TV pairing once unless its address or saved pairing changes.")
                 }.font(.subheadline)
+                Section("Power-on test") {
+                    Text("First pair with the TV while it is on. On the TV, enable Settings → All Settings → Connection → Mobile TV On → Turn on via Wi-Fi. Some firmware places Mobile TV On under General.")
+                        .font(.subheadline)
+                    TextField("TV MAC address · A0:B1:C2:D3:E4:F5", text: $model.wakeMACAddress)
+                        .textInputAutocapitalization(.characters).autocorrectionDisabled()
+                        .accessibilityLabel("TV network MAC address")
+                        .disabled(!model.validTVAddress || model.waking)
+                    Text("Copy the MAC address for the TV’s active Wi-Fi or wired connection from its network details. It is different from the IP address. Saved automatically for this TV IP.")
+                        .font(.caption).foregroundStyle(.secondary)
+                    Text("Leave the TV plugged in and your iPhone on the same home Wi-Fi. Once the TV is off, use Try turning on from the Remote screen.")
+                        .font(.subheadline)
+                    Text("Power-on is experimental and has not been verified on your TV. Some TVs or networks stop accepting this wake request after standby. Test immediately, after 15 minutes, and overnight before relying on it. Keep the TV’s own power button available during testing.")
+                        .font(.footnote).foregroundStyle(.secondary)
+                }
                 Section("About this version") {
                     Text("Works locally. No subscription, ads, LG login, or cloud account is used by this app.")
-                    Text("Turn the TV on with its physical remote. This version supports power off; waking from standby still needs device testing.")
+                    Text("Version 1.1 adds a power-on test. The app reports a wake request separately from a confirmed TV connection.")
                     Text("A soundbar or receiver may control volume separately. Individual TV apps may limit playback or keyboard commands.")
                 }.font(.footnote).foregroundStyle(.secondary)
                 if !model.address.isEmpty {

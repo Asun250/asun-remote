@@ -3,7 +3,7 @@ import Combine
 
 @MainActor
 final class RemoteModel: ObservableObject {
-    enum Phase: Equatable { case disconnected, pairing, connected }
+    enum Phase: Equatable { case disconnected, pairing, connected, waking }
 
     @Published var address: String
     @Published var mode: ConnectionMode
@@ -20,12 +20,32 @@ final class RemoteModel: ObservableObject {
 
     var connected: Bool { phase == .connected }
     var pairing: Bool { phase == .pairing }
+    var waking: Bool { phase == .waking }
+    var wakeMACAddress: String {
+        get {
+            guard let key = wakeStorageKey else { return "" }
+            return UserDefaults.standard.string(forKey: key) ?? ""
+        }
+        set {
+            guard let key = wakeStorageKey else { return }
+            objectWillChange.send()
+            UserDefaults.standard.set(newValue, forKey: key)
+        }
+    }
+    var hasWakeAddress: Bool { (try? TVMACAddress(wakeMACAddress)) != nil }
+    var validTVAddress: Bool { (try? TVEndpoint(address: address, mode: mode)) != nil }
+
+    private var wakeStorageKey: String? {
+        guard let endpoint = try? TVEndpoint(address: address, mode: mode) else { return nil }
+        return "wakeMAC:\(endpoint.host)"
+    }
 
     private var client: LGTVClient?
     private var session: URLSession?
     private var connectionTask: Task<Void, Never>?
     private var monitorTask: Task<Void, Never>?
     private var commandTail: Task<Void, Never>?
+    private var wakeTask: Task<Void, Never>?
     private var connectionID = UUID()
     private var wantsConnection: Bool
 
@@ -37,7 +57,7 @@ final class RemoteModel: ObservableObject {
     }
 
     func connect() {
-        guard !pairing else { return }
+        guard !pairing, !waking else { return }
         let endpoint: TVEndpoint
         let credential: PairingCredential?
         do {
@@ -96,6 +116,7 @@ final class RemoteModel: ObservableObject {
             let endpoint = try TVEndpoint(address: address, mode: mode)
             try PairingStore.delete(for: endpoint)
             stop(preserveIntent: false)
+            if let key = wakeStorageKey { UserDefaults.standard.removeObject(forKey: key) }
             UserDefaults.standard.removeObject(forKey: "tvAddress")
             UserDefaults.standard.removeObject(forKey: "connectionMode")
             address = ""
@@ -160,6 +181,38 @@ final class RemoteModel: ObservableObject {
                 self?.message = "Connection closed after the power-off request."
             }
             self?.disconnect()
+        }
+    }
+
+    func tryPowerOn() {
+        guard phase == .disconnected else { return }
+        let endpoint: TVEndpoint
+        let mac: TVMACAddress
+        do {
+            endpoint = try TVEndpoint(address: address, mode: mode)
+            mac = try TVMACAddress(wakeMACAddress)
+            guard try PairingStore.load(for: endpoint) != nil else {
+                throw RemoteError.message("Pair with this TV while it is on before testing power on.")
+            }
+        } catch { message = error.localizedDescription; return }
+
+        stop(preserveIntent: false)
+        let id = connectionID
+        phase = .waking
+        message = "Sending a wake request…"
+        wakeTask = Task {
+            do {
+                try await TVWakeSender.send(to: endpoint, mac: mac)
+                guard id == connectionID, !Task.isCancelled else { return }
+                phase = .disconnected
+                wakeTask = nil
+                message = "Wake request sent; power-on is not confirmed. If the TV screen comes on, tap Reconnect. If it stays off, check Mobile TV On, the MAC address, and the power-on test notes in Connection settings."
+            } catch {
+                guard id == connectionID, !Task.isCancelled else { return }
+                phase = .disconnected
+                wakeTask = nil
+                message = error.localizedDescription
+            }
         }
     }
 
@@ -240,6 +293,7 @@ final class RemoteModel: ObservableObject {
         connectionTask?.cancel(); connectionTask = nil
         monitorTask?.cancel(); monitorTask = nil
         commandTail?.cancel(); commandTail = nil
+        wakeTask?.cancel(); wakeTask = nil
         let old = client; client = nil
         session?.invalidateAndCancel(); session = nil
         Task { await old?.disconnect() }

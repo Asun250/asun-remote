@@ -118,7 +118,7 @@ enum TVProtocol {
             "forcePairing": .bool(false),
             "manifest": .object([
                 "manifestVersion": .number(1),
-                "appVersion": .string("1.0.0"),
+                "appVersion": .string("1.1.0"),
                 "appId": .string("com.asunstudios.remote"),
                 "vendorId": .string("Asun Studios"),
                 "localizedAppNames": .object(["": .string("Asun Remote")]),

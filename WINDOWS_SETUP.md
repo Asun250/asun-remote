@@ -2,15 +2,13 @@
 
 You do not need to own a Mac. A cloud Mac builds the app once, then **Sideloadly on Windows** signs and installs it on your iPhone. After installation, the remote communicates directly with your LG TV. Your PC is only needed for installation and periodic signing refreshes.
 
-**Current status:** the [cloud build passed](https://github.com/Asun250/asun-remote/actions/runs/42342321883), including all 15 protocol tests and the complete iPhone app build. The unsigned IPA is ready. Signing, installation, and real TV pairing still need testing.
+**Version 1.1:** adds an experimental power-on test. Install the newly built IPA over the existing app using the **same Apple account and bundle identifier**. A cloud build for the update is pending. The earlier v1.0 installation reached Done in Sideloadly; opening, TV pairing, and physical standby wake are not yet verified.
 
-On Mark's Windows PC, the files are in **Downloads → AsunRemote-Setup**. The IPA is inside **App → dist**. Install `iTunes64Setup.exe`, `iCloudSetup.exe`, and `SideloadlySetup64.exe` using their setup windows, then continue at step 3 below. These installers came from the official Sideloadly page and its Apple download links. iCloud supplies components needed by Sideloadly; do not enable iCloud photo or file syncing just for this setup.
-
-The IPA SHA-256 is `218f802d84b8de5327c1dd7d073b2050689db5fb21088fb53902c87afc6c9a04`.
+For an update, choose the new `AsunRemote-unsigned.ipa` in Sideloadly and press Start. Do not delete the installed app first. The checksum for each build is included in `dist/SHA256SUMS.txt`. On Mark's PC, use the IPA directly in Downloads once the new build has been copied there; older AsunRemote-Setup folders may contain an earlier build.
 
 ## 1. Put the project in a private GitHub repository
 
-Already completed: the source is in the private repository [Asun250/asun-remote](https://github.com/Asun250/asun-remote). Skip to step 3 to install the package already built. The repository/build instructions below are for rebuilding or moving the project later.
+Already completed: the source is in the private repository [Asun250/asun-remote](https://github.com/Asun250/asun-remote). Use step 3 after the updated cloud build succeeds. The repository/build instructions below are for rebuilding or moving the project later.
 
 Put the contents of the extracted **AsunRemote** folder at the repository root. The root must contain all of these:
 
@@ -55,6 +53,8 @@ This is personal sideloading, not an App Store installation. No jailbreak is req
 ## 4. Connect to the TV
 
 Turn the TV on and put the iPhone on your home network. Open Asun Remote, enter the TV’s local IP address, allow Local Network access, and accept the pairing prompt on the TV. The full pairing instructions are in README.md.
+
+For power-on testing, enable **Mobile TV On → Turn on via Wi-Fi** on the TV and enter its active network **MAC address** in Asun Remote's Connection settings. Pair while the TV is on first. Keep access to the TV's physical power button; then test **Try turning on** immediately, after 15 minutes off, and overnight. Seeing “Wake request sent” does not confirm that the TV woke. Tap Reconnect once the screen turns on. Some TVs/networks cannot accept this build's unicast wake signal after standby.
 
 The PC does not relay remote commands. It can be off during normal remote use, provided the app’s signing has not expired.
 
