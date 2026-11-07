@@ -118,7 +118,7 @@ enum TVProtocol {
             "forcePairing": .bool(false),
             "manifest": .object([
                 "manifestVersion": .number(1),
-                "appVersion": .string("1.2.0"),
+                "appVersion": .string("1.3.0"),
                 "appId": .string("com.asunstudios.remote"),
                 "vendorId": .string("Asun Studios"),
                 "localizedAppNames": .object(["": .string("Asun Remote")]),
@@ -173,4 +173,20 @@ struct TVVolume: Equatable, Sendable {
         } else { level = nil }
         muted = data["mute"]?.bool ?? data["muted"]?.bool
     }
+}
+
+struct TVKeyboardStatus: Equatable, Sendable {
+    let focused: Bool?
+
+    init(_ payload: TVPayload = [:]) {
+        // A registration acknowledgement can arrive before any field status.
+        // Missing focus must not be interpreted as a ready text field.
+        focused = payload["currentWidget"]?.object?["focus"]?.bool
+    }
+}
+
+struct TVTextSendError: Error, LocalizedError, Sendable {
+    let textInserted: Bool
+    let detail: String
+    var errorDescription: String? { detail }
 }

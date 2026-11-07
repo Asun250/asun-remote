@@ -51,6 +51,17 @@ private func registered(_ text: String, _ socket: FakeSocket) async throws {
     }
 }
 
+private func keyboardReply(_ text: String, _ socket: FakeSocket, focused: Bool? = true) async throws {
+    let request = try decode(text)
+    if request.type == "register" { try await registered(text, socket); return }
+    if request.type == "unsubscribe" { return }
+    var payload: TVPayload = ["returnValue": .bool(true)]
+    if request.type == "subscribe", let focused {
+        payload["currentWidget"] = .object(["focus": .bool(focused)])
+    }
+    await socket.push(try TVEnvelope(type: "response", id: request.id, payload: payload).text())
+}
+
 private actor SocketQueue {
     var sockets: [FakeSocket]
     init(_ sockets: [FakeSocket]) { self.sockets = sockets }
@@ -296,6 +307,168 @@ final class RemoteCoreTests: XCTestCase {
         XCTAssertEqual(messages.count, 2)
         let requests = try await control.sent.map(decode)
         XCTAssertEqual(requests.filter { $0.uri?.contains("getPointerInputSocket") == true }.count, 1)
+        await client.disconnect()
+    }
+
+    func testKeyboardRegistersBeforeSendingAndSearchWaitsForTextAcknowledgement() async throws {
+        let socket = FakeSocket { text, socket in
+            let request = try decode(text)
+            if request.uri?.hasSuffix("insertText") != true { try await keyboardReply(text, socket) }
+        }
+        let client = LGTVClient(factory: { _ in socket })
+        _ = try await client.connect(to: endpoint(), clientKey: nil)
+        let text = "  café \"jazz\" 🎵\n2026  "
+        let sending = Task { try await client.sendText(text, submit: true) }
+        try await socket.waitForSent(3)
+        let before = try await socket.sent.map(decode)
+        XCTAssertEqual(before.map(\.type), ["register", "subscribe", "request"])
+        XCTAssertEqual(before[1].uri, "ssap://com.webos.service.ime/registerRemoteKeyboard")
+        XCTAssertEqual(before[1].payload?["subscribe"], .bool(true))
+        XCTAssertEqual(before[2].uri, "ssap://com.webos.service.ime/insertText")
+        XCTAssertEqual(before[2].payload?["text"], .string(text))
+        XCTAssertEqual(before[2].payload?["replace"], .number(0))
+        await socket.push(try TVEnvelope(type: "response", id: before[2].id,
+                                        payload: ["returnValue": .bool(true)]).text())
+        try await sending.value
+        let after = try await socket.sent.map(decode)
+        XCTAssertEqual(after.count, 4)
+        XCTAssertEqual(after.last?.uri, "ssap://com.webos.service.ime/sendEnterKey")
+        await client.disconnect()
+    }
+
+    func testKeyboardTracksFocusChangesWithoutRepeatedSubscriptions() async throws {
+        let socket = FakeSocket { text, socket in try await keyboardReply(text, socket, focused: false) }
+        let client = LGTVClient(factory: { _ in socket })
+        _ = try await client.connect(to: endpoint(), clientKey: nil)
+        let initial = try await client.keyboardState()
+        XCTAssertEqual(initial.focused, false)
+        let requests = try await socket.sent.map(decode)
+        let id = try XCTUnwrap(requests.last?.id)
+        await socket.push(try TVEnvelope(type: "response", id: id,
+                                        payload: ["currentWidget": .object(["focus": .bool(true)])]).text())
+        _ = try await client.request("audio/getVolume") // Drain the earlier status update.
+        let ready = try await client.keyboardState()
+        XCTAssertEqual(ready.focused, true)
+        try await client.sendText("test", submit: false)
+        try await client.deleteTextCharacter()
+        await socket.push(try TVEnvelope(type: "response", id: id,
+                                        payload: ["currentWidget": .object(["focus": .bool(false)])]).text())
+        _ = try await client.request("audio/getVolume")
+        do { try await client.sendText("do not send", submit: true); XCTFail("Field is no longer focused") }
+        catch { XCTAssertEqual((error as? TVTextSendError)?.textInserted, false) }
+        let sent = try await socket.sent.map(decode)
+        XCTAssertEqual(sent.filter { $0.type == "subscribe" }.count, 1)
+        XCTAssertEqual(sent.filter { $0.uri?.hasSuffix("insertText") == true }.count, 1)
+        XCTAssertEqual(sent.first { $0.uri?.hasSuffix("deleteCharacters") == true }?.payload?["count"], .number(1))
+        await client.disconnect()
+    }
+
+    func testKeyboardAcknowledgementWithoutFieldDoesNotEnableTyping() async throws {
+        let socket = FakeSocket { text, socket in try await keyboardReply(text, socket, focused: nil) }
+        let client = LGTVClient(factory: { _ in socket })
+        _ = try await client.connect(to: endpoint(), clientKey: nil)
+        let state = try await client.keyboardState()
+        XCTAssertNil(state.focused)
+        do { try await client.sendText("private draft", submit: true); XCTFail("Unknown field must not receive text") }
+        catch { XCTAssertEqual((error as? TVTextSendError)?.textInserted, false) }
+        let sent = try await socket.sent.map(decode)
+        XCTAssertFalse(sent.contains { $0.uri?.hasSuffix("insertText") == true || $0.uri?.hasSuffix("sendEnterKey") == true })
+        await client.disconnect()
+    }
+
+    func testRejectedTextDoesNotSendSearchOrReportInsertion() async throws {
+        let socket = FakeSocket { text, socket in
+            let request = try decode(text)
+            if request.uri?.hasSuffix("insertText") == true {
+                await socket.push(try TVEnvelope(type: "response", id: request.id,
+                    payload: ["returnValue": .bool(false), "errorText": .string("Input unavailable")]).text())
+            } else { try await keyboardReply(text, socket) }
+        }
+        let client = LGTVClient(factory: { _ in socket })
+        _ = try await client.connect(to: endpoint(), clientKey: nil)
+        do { try await client.sendText("query", submit: true); XCTFail("Expected failure") }
+        catch {
+            XCTAssertEqual((error as? TVTextSendError)?.textInserted, false)
+            XCTAssertEqual(error.localizedDescription, "Input unavailable")
+        }
+        let sent = try await socket.sent.map(decode)
+        XCTAssertFalse(sent.contains { $0.uri?.hasSuffix("sendEnterKey") == true })
+        await client.disconnect()
+    }
+
+    func testSearchFailureReportsAcceptedTextWithoutResendingIt() async throws {
+        let socket = FakeSocket { text, socket in
+            let request = try decode(text)
+            if request.uri?.hasSuffix("sendEnterKey") == true {
+                await socket.push(try TVEnvelope(type: "error", id: request.id, error: "Search unavailable").text())
+            } else { try await keyboardReply(text, socket) }
+        }
+        let client = LGTVClient(factory: { _ in socket })
+        _ = try await client.connect(to: endpoint(), clientKey: nil)
+        do { try await client.sendText("query", submit: true); XCTFail("Expected failure") }
+        catch {
+            XCTAssertEqual((error as? TVTextSendError)?.textInserted, true)
+            XCTAssertEqual(error.localizedDescription, "Search unavailable")
+        }
+        let sent = try await socket.sent.map(decode)
+        XCTAssertEqual(sent.filter { $0.uri?.hasSuffix("insertText") == true }.count, 1)
+        await client.disconnect()
+    }
+
+    func testKeyboardRecheckUnsubscribesAndIgnoresTheOldField() async throws {
+        let socket = FakeSocket { text, socket in try await keyboardReply(text, socket) }
+        let client = LGTVClient(factory: { _ in socket })
+        _ = try await client.connect(to: endpoint(), clientKey: nil)
+        _ = try await client.keyboardState()
+        let oldRequests = try await socket.sent.map(decode)
+        let oldID = try XCTUnwrap(oldRequests.last?.id)
+        await client.resetKeyboard()
+        await socket.setHandler { text, socket in try await keyboardReply(text, socket, focused: false) }
+        _ = try await client.keyboardState()
+        await socket.push(try TVEnvelope(type: "response", id: oldID,
+                                        payload: ["currentWidget": .object(["focus": .bool(true)])]).text())
+        _ = try await client.request("audio/getVolume")
+        let state = try await client.keyboardState()
+        XCTAssertEqual(state.focused, false)
+        let sent = try await socket.sent.map(decode)
+        XCTAssertEqual(sent.first { $0.type == "unsubscribe" }?.id, oldID)
+        XCTAssertEqual(sent.filter { $0.type == "subscribe" }.count, 2)
+        await client.disconnect()
+    }
+
+    func testKeyboardSubscriptionErrorDoesNotDisableOtherControls() async throws {
+        let socket = FakeSocket { text, socket in
+            let request = try decode(text)
+            if request.type == "subscribe" {
+                await socket.push(try TVEnvelope(type: "error", id: request.id, error: "403 Keyboard unavailable").text())
+            } else { try await keyboardReply(text, socket) }
+        }
+        let client = LGTVClient(factory: { _ in socket })
+        _ = try await client.connect(to: endpoint(), clientKey: nil)
+        for _ in 0..<2 {
+            do { _ = try await client.keyboardState(); XCTFail("Expected keyboard rejection") }
+            catch { XCTAssertTrue(error.localizedDescription.contains("403")) }
+        }
+        _ = try await client.request("audio/volumeDown")
+        let sent = try await socket.sent.map(decode)
+        XCTAssertEqual(sent.filter { $0.type == "subscribe" }.count, 1)
+        let connected = await client.isConnected
+        XCTAssertTrue(connected)
+        await client.disconnect()
+    }
+
+    func testReconnectDoesNotReuseTheOldKeyboardFocus() async throws {
+        let first = FakeSocket { text, socket in try await keyboardReply(text, socket) }
+        let second = FakeSocket { text, socket in try await keyboardReply(text, socket, focused: false) }
+        let queue = SocketQueue([first, second])
+        let client = LGTVClient(factory: { _ in try await queue.next() })
+        _ = try await client.connect(to: endpoint(), clientKey: nil)
+        _ = try await client.keyboardState()
+        _ = try await client.connect(to: endpoint(), clientKey: "test-pair-key")
+        do { try await client.sendText("do not send", submit: false); XCTFail("Old focus must be discarded") }
+        catch { XCTAssertEqual((error as? TVTextSendError)?.textInserted, false) }
+        let sent = try await second.sent.map(decode)
+        XCTAssertEqual(sent.map(\.type), ["register", "subscribe"])
         await client.disconnect()
     }
 }

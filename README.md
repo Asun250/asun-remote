@@ -2,9 +2,11 @@
 
 A native SwiftUI remote-control project for Mark Anthony’s **LG webOS UM6970PUA**, identified from the TV photo showing firmware **05.40.97**. iPhone with iOS 17 or later. No third-party app dependencies.
 
-**Version 1.2 updates OK selection and volume-button tap targets.** OK now sends the remote Enter key to select the focused item in TV apps, instead of clicking a pointer location. Both plus and minus use the full 48-point-high button area. All 19 core tests passed and the complete iPhone app compiled successfully. Physical verification in YouTube and Netflix is still required.
+**Version 1.3 adds a registered TV keyboard session, live field readiness, and Send & Search.** Select a search field on the TV, open Keyboard on the iPhone, and wait for **TV text field ready**. Type a draft and choose **Send to TV** or **Send & Search**. The app waits for text acknowledgement before submitting Search, preserves unconfirmed drafts, and clears confirmed drafts to avoid duplicate insertion.
 
-The user has used the app on the TV and reported these two problems. Standby wake remains experimental and unverified; the TV's physical power button is available for turning it on.
+The user confirmed the v1.2 OK and volume changes work on the TV. Their new keyboard report is specifically about **YouTube**. A YouTube screen may use its own keyboard without exposing an LG text field; the app now reports that state instead of silently sending text to nowhere. YouTube compatibility on this TV still requires a physical test. The v1.3 cloud build is pending.
+
+Standby wake remains experimental and unverified; the TV's physical power button is available for turning it on.
 
 **Only have Windows? Start with [WINDOWS_SETUP.md](WINDOWS_SETUP.md).** Sideloadly on Windows can sign and install the IPA. The project includes a manual GitHub Actions cloud-Mac build and an unsigned IPA packaging script for future updates.
 
@@ -21,7 +23,7 @@ The user has used the app on the TV and reported these two problems. Standby wak
 - Experimental **Try turning on** control, with per-TV MAC storage and bounded local unicast wake packets.
 - Connection timeouts, command errors, and reconnect after returning to the app.
 
-Power **on** must be tested before relying on it. See the setup and limitations below. Volume routed through a soundbar/receiver, individual app playback, and text-entry behavior need testing on your setup. The user has reported initial real-TV behavior; the v1.2 fixes and other firmware-specific functions still need on-device testing.
+Power **on** must be tested before relying on it. See the setup and limitations below. Volume routed through a soundbar/receiver, individual app playback, and text-entry behavior need testing on your setup. The user has reported initial real-TV behavior; the v1.3 keyboard flow and other firmware-specific functions still need on-device testing.
 
 ## Install using a Mac
 
@@ -70,7 +72,7 @@ If wake fails, use LG ThinQ to check whether the TV can wake with its supported 
 | Pairing prompt rejected/expired | Tap Connect again and approve the prompt on the TV. |
 | TV identity changed | Confirm the IP still belongs to this TV. If it was reset/updated, use Forget pairing and pair again. |
 | TV controls work, but an app ignores playback | Use the directional pad to operate that app’s own controls. App behavior varies. |
-| Keyboard does nothing | First focus a TV search/text field; some TV apps block remote keyboard entry. |
+| Keyboard does nothing | Select the actual TV search field and press OK. Open Keyboard and check for TV text field ready. Use Send & Search to send your phone draft before submitting. If YouTube reports no field, that screen may use its own keyboard; try an LG browser field to distinguish app support from a keyboard connection problem. |
 | Volume does not change | Check whether a soundbar/receiver is handling volume instead of the TV. |
 | TV is off | Configure Mobile TV On and the active MAC, then use Try turning on. Wake remains unverified; use the TV’s physical button if it fails. |
 | Wake works immediately but fails later | Unicast/ARP or deeper standby may be the limit. Test LG ThinQ; do not treat this build as a reliable power-on replacement yet. |

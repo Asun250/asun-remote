@@ -63,7 +63,7 @@ struct ConnectionView: View {
                 }
                 Section("About this version") {
                     Text("Works locally. No subscription, ads, LG login, or cloud account is used by this app.")
-                    Text("Version 1.2 improves OK selection and volume-button tapping. Power-on remains experimental; a wake request is separate from a confirmed TV connection.")
+                    Text("Version 1.3 adds TV text-field detection and Send & Search. Power-on remains experimental; a wake request is separate from a confirmed TV connection.")
                     Text("A soundbar or receiver may control volume separately. Individual TV apps may limit playback or keyboard commands.")
                 }.font(.footnote).foregroundStyle(.secondary)
                 if !model.address.isEmpty {
@@ -89,30 +89,80 @@ struct KeyboardView: View {
     @ObservedObject var model: RemoteModel
     @Environment(\.dismiss) private var dismiss
     @State private var text = ""
+    @State private var checkID = UUID()
+    @FocusState private var typing: Bool
+
+    private var ready: Bool {
+        model.connected && model.keyboardStatus.focused == true
+            && !model.keyboardChecking && !model.keyboardBusy && model.keyboardProblem == nil
+    }
 
     var body: some View {
         NavigationStack {
             Form {
-                Section {
-                    Text("First select a search or text field on your TV. Some apps do not accept remote typing.")
-                        .foregroundStyle(.secondary)
+                Section("TV search field") {
+                    if !model.connected {
+                        Label("Connect to your TV first", systemImage: "wifi.slash")
+                    } else if model.keyboardChecking {
+                        HStack { ProgressView(); Text("Checking the TV keyboard…") }
+                    } else if let problem = model.keyboardProblem {
+                        Label("Keyboard connection unavailable", systemImage: "exclamationmark.triangle")
+                        Text(problem).font(.footnote).foregroundStyle(.secondary)
+                    } else if model.keyboardStatus.focused == true {
+                        Label("TV text field ready", systemImage: "checkmark.circle.fill").foregroundStyle(.green)
+                    } else {
+                        Label("No TV text field detected", systemImage: "text.cursor")
+                        Text("Select the search box on your TV and press OK. This status updates when the TV makes a field available.")
+                            .font(.footnote).foregroundStyle(.secondary)
+                    }
+                    Button("Check TV field again", systemImage: "arrow.clockwise") { checkID = UUID() }
+                        .disabled(!model.connected || model.keyboardBusy || model.keyboardChecking)
+                }
+                Section("Type on your iPhone") {
                     TextField("Type for your TV", text: $text, axis: .vertical)
-                        .lineLimit(3...6).autocorrectionDisabled()
+                        .lineLimit(2...4).autocorrectionDisabled()
+                        .textInputAutocapitalization(.never)
+                        .focused($typing)
+                        .disabled(model.keyboardBusy)
                         .onChange(of: text) { _, value in
                             if value.count > 500 { text = String(value.prefix(500)) }
                         }
-                    Button("Send text") { model.typeText(text) }.disabled(text.isEmpty || !model.connected)
+                    Button { send(search: false) } label: {
+                        Label("Send to TV", systemImage: "paperplane")
+                            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).contentShape(Rectangle())
+                    }.disabled(text.isEmpty || !ready)
+                    Button { send(search: true) } label: {
+                        Label(text.isEmpty ? "Search on TV" : "Send & Search", systemImage: "magnifyingglass")
+                            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).contentShape(Rectangle())
+                    }.disabled(!ready)
+                    if model.keyboardBusy { HStack { ProgressView(); Text("Sending…") } }
+                    if let notice = model.keyboardNotice { Text(notice).font(.footnote).foregroundStyle(.secondary) }
                 }
                 Section {
-                    Button("Enter / Search", systemImage: "return") { model.enterText() }
-                    Button("Delete one character", systemImage: "delete.left") { model.deleteCharacter() }
-                }.disabled(!model.connected)
-                if let message = model.message {
-                    Section { Text(message).font(.footnote).foregroundStyle(.secondary) }
+                    Button("Delete one character on TV", systemImage: "delete.left") {
+                        Task { await model.deleteKeyboardCharacter() }
+                    }.disabled(!ready)
+                    Text("Editing the draft above changes only your iPhone text. Send to TV appends it; Send & Search also submits it. Confirmed text is cleared from the draft so it is not sent twice.")
+                        .font(.footnote).foregroundStyle(.secondary)
+                }
+                Section("If YouTube stays unavailable") {
+                    Text("Some YouTube screens use their own keyboard and do not expose a field to LG remote apps. If the status stays unavailable with Search selected, this text connection cannot type into that screen. Use the arrow controls or YouTube’s phone-to-TV connection for that screen.")
+                        .font(.footnote).foregroundStyle(.secondary)
                 }
             }
             .navigationTitle("TV keyboard").navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
+            .task(id: checkID) { await model.watchKeyboard() }
+            .onAppear { typing = true }
+            .onChange(of: model.connected) { _, _ in checkID = UUID() }
+        }
+    }
+
+    private func send(search: Bool) {
+        let draft = text
+        Task {
+            let accepted = await model.sendKeyboardText(draft, search: search)
+            if accepted && text == draft { text = "" }
         }
     }
 }

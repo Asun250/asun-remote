@@ -17,6 +17,11 @@ final class RemoteModel: ObservableObject {
     @Published private(set) var appsProblem: String?
     @Published private(set) var inputsProblem: String?
     @Published private(set) var loadingLists = false
+    @Published private(set) var keyboardStatus = TVKeyboardStatus()
+    @Published private(set) var keyboardChecking = false
+    @Published private(set) var keyboardBusy = false
+    @Published private(set) var keyboardProblem: String?
+    @Published private(set) var keyboardNotice: String?
 
     var connected: Bool { phase == .connected }
     var pairing: Bool { phase == .pairing }
@@ -47,6 +52,7 @@ final class RemoteModel: ObservableObject {
     private var commandTail: Task<Void, Never>?
     private var wakeTask: Task<Void, Never>?
     private var connectionID = UUID()
+    private var keyboardWatchID = UUID()
     private var wantsConnection: Bool
 
     init() {
@@ -156,21 +162,76 @@ final class RemoteModel: ObservableObject {
         enqueue { connection in _ = try await connection.request("tv/switchInput", payload: ["inputId": .string(input.id)]) }
     }
 
-    func typeText(_ text: String) {
-        guard !text.isEmpty, text.count <= 500 else { return }
-        enqueue { connection in
-            _ = try await connection.request("com.webos.service.ime/insertText", payload: ["text": .string(text), "replace": .bool(false)])
+    func watchKeyboard() async {
+        guard connected, let client else { return }
+        let id = connectionID
+        let watchID = UUID()
+        keyboardWatchID = watchID
+        keyboardChecking = true
+        keyboardStatus = TVKeyboardStatus()
+        keyboardProblem = nil
+        await client.resetKeyboard()
+        defer { if keyboardWatchID == watchID { keyboardChecking = false } }
+        do {
+            while !Task.isCancelled {
+                let status = try await client.keyboardState()
+                guard id == connectionID, keyboardWatchID == watchID, !Task.isCancelled else { return }
+                keyboardStatus = status
+                keyboardChecking = false
+                // Read the latest local subscription state; this sends no polling
+                // requests to the TV and never reads or stores the field contents.
+                try await Task.sleep(nanoseconds: 300_000_000)
+            }
+        } catch {
+            guard id == connectionID, keyboardWatchID == watchID, !Task.isCancelled else { return }
+            keyboardProblem = friendlyError(error)
+            keyboardStatus = TVKeyboardStatus()
         }
     }
 
-    func enterText() {
-        enqueue { connection in _ = try await connection.request("com.webos.service.ime/sendEnterKey") }
+    func sendKeyboardText(_ text: String, search: Bool) async -> Bool {
+        guard connected, !keyboardBusy else { return false }
+        let id = connectionID
+        keyboardBusy = true
+        keyboardNotice = nil
+        var textAccepted = false
+        let operation = enqueue { [weak self] connection in
+            do {
+                try await connection.sendText(text, submit: search)
+                textAccepted = !text.isEmpty
+                guard let self, id == self.connectionID else { return }
+                self.keyboardNotice = search ? "Text and Search were accepted by the TV. Check the TV for results." : "Text accepted by the TV. Check the search field."
+            } catch {
+                if let failure = error as? TVTextSendError { textAccepted = failure.textInserted }
+                guard let self, id == self.connectionID else { return }
+                let detail = self.friendlyError(error)
+                self.keyboardNotice = textAccepted
+                    ? "Text was accepted, but Search did not finish. Your draft was cleared to avoid sending it twice. \(detail)"
+                    : "Text was not confirmed. Your draft is kept. Check the TV before retrying. \(detail)"
+            }
+        }
+        await operation?.value
+        if id == connectionID { keyboardBusy = false }
+        return textAccepted
     }
 
-    func deleteCharacter() {
-        enqueue { connection in
-            _ = try await connection.request("com.webos.service.ime/deleteCharacters", payload: ["count": .number(1)])
+    func deleteKeyboardCharacter() async {
+        guard connected, !keyboardBusy else { return }
+        let id = connectionID
+        keyboardBusy = true
+        keyboardNotice = nil
+        let operation = enqueue { [weak self] connection in
+            do {
+                try await connection.deleteTextCharacter()
+                guard let self, id == self.connectionID else { return }
+                self.keyboardNotice = "Delete accepted by the TV."
+            } catch {
+                guard let self, id == self.connectionID else { return }
+                self.keyboardNotice = self.friendlyError(error)
+            }
         }
+        await operation?.value
+        if id == connectionID { keyboardBusy = false }
     }
 
     func powerOff() {
@@ -222,8 +283,9 @@ final class RemoteModel: ObservableObject {
         Task { await loadLists(connection: client, id: id) }
     }
 
-    private func enqueue(refreshVolume: Bool = false, _ operation: @escaping @MainActor (LGTVClient) async throws -> Void) {
-        guard connected, let client else { return }
+    @discardableResult
+    private func enqueue(refreshVolume: Bool = false, _ operation: @escaping @MainActor (LGTVClient) async throws -> Void) -> Task<Void, Never>? {
+        guard connected, let client else { return nil }
         let previous = commandTail
         let id = connectionID
         commandTail = Task {
@@ -242,6 +304,7 @@ final class RemoteModel: ObservableObject {
                 if !(await client.isConnected) { stop(preserveIntent: true) }
             }
         }
+        return commandTail
     }
 
     private func startMonitor(connection: LGTVClient, id: UUID) {
@@ -290,6 +353,12 @@ final class RemoteModel: ObservableObject {
     private func stop(preserveIntent: Bool) {
         if !preserveIntent { wantsConnection = false }
         connectionID = UUID()
+        keyboardWatchID = UUID()
+        keyboardStatus = TVKeyboardStatus()
+        keyboardChecking = false
+        keyboardBusy = false
+        keyboardProblem = nil
+        keyboardNotice = nil
         connectionTask?.cancel(); connectionTask = nil
         monitorTask?.cancel(); monitorTask = nil
         commandTail?.cancel(); commandTail = nil

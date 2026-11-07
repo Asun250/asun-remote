@@ -1,8 +1,18 @@
-# Validation — Asun Remote 1.2
+# Validation — Asun Remote 1.3
 
 Updated November 6, 2026 (Pacific time). Target family: LG webOS UM6970PUA.
 
-## Current update: v1.2
+## Current update: v1.3
+
+The user confirmed v1.2 works and then reported that typing in YouTube Search does not work. Code inspection found no `registerRemoteKeyboard` subscription, no focused-field detection, and a separate Enter / Search action that could submit without first sending the phone draft.
+
+The update establishes a session-scoped keyboard subscription, processes ongoing `currentWidget.focus` events, and clears keyboard state on reconnect. Sending requires a reported focused field. Send & Search waits for insertion acknowledgement before Enter. If Enter fails after acknowledged insertion, the UI clears the sent draft and reports the partial result so retry does not append it twice. Rejected or unconfirmed text remains in the draft. The keyboard UI reports readiness, progress, errors, and the distinction between editing the phone draft and deleting a TV character.
+
+Eight new protocol tests cover registration/insertion/submission ordering with Unicode and whitespace, ongoing focus changes, an acknowledgement without field status, insertion failure, partial success, unsubscribing/rechecking with stale events, keyboard-service rejection without breaking volume commands, and reconnect isolation. Total: **27 core tests**. Cloud test and native iPhone build results are pending.
+
+No simulator UI or physical-TV keyboard test has been run. YouTube may not expose its custom search field through LG's IME service; the readiness status and a comparison with the TV browser are needed to distinguish that limitation from a connection failure. Do not report YouTube typing as fixed until the user verifies it.
+
+## Version 1.2 history
 
 The user reports that OK reacts but does not open the selected YouTube/Netflix profile, and Volume Down only works occasionally. The installed version number was not confirmed. App launch and some TV communication are now evidenced by the user's report; it does not establish correct profile selection or reliable volume control.
 
@@ -33,7 +43,7 @@ The user explicitly approved uploading the update to the existing private Asun25
 
 ## Physical verification still required
 
-- Corrected v1.2 tap areas and streaming-app profile selection; native layout and accessibility.
+- Version 1.3 keyboard layout, field readiness, input delivery and search submission in YouTube and an LG browser field; native layout and accessibility. The user reported v1.2 was working after installation.
 - Keychain/TLS persistence and reliable behavior of all remote commands on this TV.
 - Wake request acceptance by the signed iOS app with Local Network permission.
 - Actual power-on after short standby, 15 minutes, and overnight. The app cannot infer screen power from successful UDP transmission. A later registered TV session confirms connectivity only.

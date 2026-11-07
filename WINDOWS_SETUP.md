@@ -2,19 +2,24 @@
 
 You do not need to own a Mac. A cloud Mac builds the app once, then **Sideloadly on Windows** signs and installs it on your iPhone. After installation, the remote communicates directly with your LG TV. Your PC is only needed for installation and periodic signing refreshes.
 
-**Version 1.2:** fixes OK selecting the highlighted item and makes the entire plus/minus button area tappable. Install the new IPA over the existing app using the **same Apple account and bundle identifier**. Do not delete the installed app first.
+**Version 1.3:** registers with the TV's keyboard service, shows whether a TV text field is ready, and adds **Send & Search**. The v1.2 OK and volume improvements remain included. Install over the existing app using the **same Apple account and bundle identifier**.
 
-On Mark's PC, choose **Downloads → AsunRemote-v1.2.ipa** in Sideloadly, then click **Start**. If using this ZIP instead, extract it and select `dist/AsunRemote-unsigned.ipa`. The checksum is in `dist/SHA256SUMS.txt`. Confirm version 1.2 in the app's Connection settings after updating; older Downloads files may contain v1.0 or v1.1.
+On Mark's PC, select **`C:\Asun remote app\AsunRemote-v1.3.ipa`** in Sideloadly, then click **Start**. If using this ZIP instead, extract it and select `dist/AsunRemote-unsigned.ipa`. The checksum is in `dist/SHA256SUMS.txt`. Confirm version 1.3 in the app's Connection settings after updating.
 
-After Sideloadly shows Done, test these two fixes on the TV:
+After Sideloadly shows Done:
 
-1. In YouTube, use the arrows to highlight a profile, then press OK once. Repeat in Netflix.
-2. Tap Volume Down several times, including slightly beside the minus symbol within its button area. Each tap should register. Check Volume Up too.
-3. If a tap still fails, note whether the iPhone vibrates and whether the TV displays its volume indicator or the app shows an error. This separates a missed tap from a TV/network response problem.
+1. On the TV, open YouTube Search and select the actual text field with OK.
+2. On the iPhone, open Asun Remote → Keyboard. Look for **TV text field ready**.
+3. Type a short query and tap **Send & Search**. This sends the draft first and submits only after the TV acknowledges the text. **Send to TV** inserts without submitting.
+4. Confirmed text disappears from the phone draft; if sending is unconfirmed, the draft stays. Check the TV before retrying after an error so a lost acknowledgement does not produce duplicate text.
+5. If YouTube stays at **No TV text field detected**, try the TV browser's address/search field. Some YouTube screens use a custom keyboard that is not exposed to LG remote apps. This update cannot force such a field to accept text. Use the arrow controls or YouTube's phone-to-TV connection for that screen.
+6. Check that OK/profile selection and Volume Down still work.
+
+Keyboard input uses a local subscription for focus status; it does not read, save, or upload the TV's text-field contents. The phone draft is held only while the keyboard sheet is open. An acknowledgement means the TV accepted a request, not proof that YouTube displayed the text.
 
 ## 1. Put the project in a private GitHub repository
 
-Already completed: the source is in the private repository [Asun250/asun-remote](https://github.com/Asun250/asun-remote). Skip to step 3 to install v1.2. The repository/build instructions below are for rebuilding or moving the project later.
+Already completed: the source is in the private repository [Asun250/asun-remote](https://github.com/Asun250/asun-remote). Skip to step 3 to install v1.3. The repository/build instructions below are for rebuilding or moving the project later.
 
 Put the contents of the extracted **AsunRemote** folder at the repository root. The root must contain all of these:
 

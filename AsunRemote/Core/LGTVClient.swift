@@ -19,6 +19,10 @@ actor LGTVClient {
     private var pending: [String: Pending] = [:]
     private var generation = UUID()
     private var endpoint: TVEndpoint?
+    private var keyboardID: String?
+    private var keyboardOpening: Task<Void, Error>?
+    private var keyboardStatus = TVKeyboardStatus()
+    private var keyboardFailure: RemoteError?
     private(set) var isConnected = false
 
     init(requestTimeout: TimeInterval = 8, pairingTimeout: TimeInterval = 60,
@@ -66,6 +70,10 @@ actor LGTVClient {
         pointerReceiveTask?.cancel(); pointerReceiveTask = nil
         pointerID = UUID()
         pointerOpening?.cancel(); pointerOpening = nil
+        keyboardOpening?.cancel(); keyboardOpening = nil
+        keyboardID = nil
+        keyboardStatus = TVKeyboardStatus()
+        keyboardFailure = nil
         let old = socket; socket = nil
         let oldPointer = pointer; pointer = nil
         let abandoned = pending.values
@@ -83,6 +91,94 @@ actor LGTVClient {
         return try await exchange(TVEnvelope(type: "request", id: UUID().uuidString,
                                              uri: "ssap://" + uri, payload: payload),
                                   expected: "response", timeout: requestTimeout)
+    }
+
+    func resetKeyboard() async {
+        let oldID = keyboardID
+        keyboardID = nil
+        keyboardOpening?.cancel(); keyboardOpening = nil
+        keyboardStatus = TVKeyboardStatus()
+        keyboardFailure = nil
+        if let oldID {
+            fail(oldID, error: CancellationError())
+            if let socket, let text = try? TVEnvelope(type: "unsubscribe", id: oldID).text() {
+                try? await socket.send(text)
+            }
+        }
+    }
+
+    func keyboardState() async throws -> TVKeyboardStatus {
+        guard isConnected else { throw RemoteError.notPaired }
+        if let keyboardFailure { throw keyboardFailure }
+        let current = generation
+        if keyboardID == nil {
+            let id = UUID().uuidString
+            keyboardID = id
+            keyboardStatus = TVKeyboardStatus()
+            keyboardOpening = Task {
+                _ = try await self.exchange(
+                    TVEnvelope(type: "subscribe", id: id,
+                               uri: "ssap://com.webos.service.ime/registerRemoteKeyboard",
+                               payload: ["subscribe": .bool(true)]),
+                    expected: "response", timeout: self.requestTimeout)
+            }
+        }
+        let id = keyboardID
+        do {
+            try await keyboardOpening?.value
+            try Task.checkCancellation()
+            guard current == generation, keyboardID == id, isConnected else { throw RemoteError.disconnected }
+            keyboardOpening = nil
+            if let keyboardFailure { throw keyboardFailure }
+            return keyboardStatus
+        } catch {
+            if current == generation, keyboardID == id {
+                keyboardOpening = nil
+                // Keep the failed subscription until an explicit recheck. Avoid
+                // silently retrying permission failures or timed-out subscriptions.
+                keyboardFailure = .message(error.localizedDescription)
+            }
+            throw error
+        }
+    }
+
+    func sendText(_ text: String, submit: Bool) async throws {
+        guard text.count <= 500, !text.isEmpty || submit else {
+            throw TVTextSendError(textInserted: false, detail: "Enter between 1 and 500 characters.")
+        }
+        let current = generation
+        var inserted = false
+        do {
+            try await requireTextField()
+            guard current == generation else { throw RemoteError.disconnected }
+            if !text.isEmpty {
+                _ = try await request("com.webos.service.ime/insertText",
+                                      payload: ["text": .string(text), "replace": .number(0)])
+                inserted = true
+            }
+            if submit {
+                try Task.checkCancellation()
+                guard current == generation, isConnected else { throw RemoteError.disconnected }
+                try await requireTextField()
+                _ = try await request("com.webos.service.ime/sendEnterKey")
+            }
+        } catch {
+            throw TVTextSendError(textInserted: inserted, detail: error.localizedDescription)
+        }
+    }
+
+    func deleteTextCharacter() async throws {
+        let current = generation
+        try await requireTextField()
+        guard current == generation else { throw RemoteError.disconnected }
+        _ = try await request("com.webos.service.ime/deleteCharacters", payload: ["count": .number(1)])
+    }
+
+    private func requireTextField() async throws {
+        let state = try await keyboardState()
+        guard state.focused == true else {
+            throw RemoteError.message("No TV text field is ready. Select the search box on the TV and press OK. Some app screens do not accept remote typing.")
+        }
     }
 
     func press(_ button: RemoteButton) async throws {
@@ -163,8 +259,19 @@ actor LGTVClient {
             await connectionFailed(RemoteError.message("The TV sent an invalid response."), generation: current)
             return
         }
-        guard let id = message.id, let item = pending[id] else { return }
+        guard let id = message.id else { return }
         let payload = message.payload ?? [:]
+        // Subscription replies continue after the initial request completes.
+        // Track focus updates without treating them as new command replies.
+        if id == keyboardID {
+            if message.type == "error" || payload["returnValue"]?.bool == false {
+                keyboardStatus = TVKeyboardStatus()
+                keyboardFailure = .message(message.error ?? payload["errorText"]?.string ?? "The TV keyboard service is unavailable.")
+            } else if message.type == "response", payload["currentWidget"] != nil {
+                keyboardStatus = TVKeyboardStatus(payload)
+            }
+        }
+        guard let item = pending[id] else { return }
         if message.type == "error" || payload["returnValue"]?.bool == false {
             fail(id, error: RemoteError.message(message.error ?? payload["errorText"]?.string ?? "The TV could not complete this command."))
             return
