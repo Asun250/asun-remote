@@ -30,9 +30,10 @@ final class RemoteModel: ObservableObject {
     private var wantsConnection: Bool
 
     init() {
-        address = UserDefaults.standard.string(forKey: "tvAddress") ?? ""
+        let savedAddress = UserDefaults.standard.string(forKey: "tvAddress") ?? ""
+        address = savedAddress
         mode = ConnectionMode(rawValue: UserDefaults.standard.string(forKey: "connectionMode") ?? "") ?? .secure
-        wantsConnection = !address.isEmpty
+        wantsConnection = !savedAddress.isEmpty
     }
 
     func connect() {
