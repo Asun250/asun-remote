@@ -2,7 +2,7 @@
 
 A native SwiftUI remote-control project for Mark Anthony’s **LG webOS UM6970PUA**, identified from the TV photo showing firmware **05.40.97**. iPhone with iOS 17 or later. No third-party app dependencies.
 
-**Version 1.2 fixes OK selection and small volume-button tap targets.** OK now sends the remote Enter key to select the focused item in TV apps, instead of clicking a pointer location. Both plus and minus use the full 48-point-high button area. Physical verification in YouTube and Netflix is still required; the new cloud build is pending.
+**Version 1.2 updates OK selection and volume-button tap targets.** OK now sends the remote Enter key to select the focused item in TV apps, instead of clicking a pointer location. Both plus and minus use the full 48-point-high button area. All 19 core tests passed and the complete iPhone app compiled successfully. Physical verification in YouTube and Netflix is still required.
 
 The user has used the app on the TV and reported these two problems. Standby wake remains experimental and unverified; the TV's physical power button is available for turning it on.
 

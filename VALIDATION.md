@@ -8,7 +8,18 @@ The user reports that OK reacts but does not open the selected YouTube/Netflix p
 
 Code inspection found that OK sent `type:click`, while the D-pad moves focus. It now sends a single `type:button` with `name:ENTER`. The existing navigation regression test checks Up → Enter → Back over one pointer socket and the exact framing. The volume rocker labels had no explicit hit shape around their small glyphs; each now has a full-width, 48-point-high rectangular hit area. Other drawn buttons have explicit matching hit shapes.
 
-The existing 19 core tests and complete iOS build will run for this update. No automated UI or physical-TV test has been run for the corrected tap areas. On-device checks must cover both streaming apps and taps around the minus glyph. Power-on remains experimental; the user found the physical power button sufficient for turning the TV on.
+All 19 core tests passed with zero failures, including the updated Up → Enter → Back check, and the complete iOS Release build succeeded. No automated UI or physical-TV test has been run for the corrected tap areas. On-device checks must cover both streaming apps and taps around the minus glyph. Power-on remains experimental; the user found the physical power button sufficient for turning the TV on.
+
+## Successful v1.2 build
+
+- [Cloud run #4](https://github.com/Asun250/asun-remote/actions/runs/42346339029) built source commit `e9ec42a9e847f758cf51caabfa1b1d2a5f66a273`.
+- All 19 core tests passed with zero failures; the unsigned Release iPhone app compiled successfully.
+- Artifact archive SHA-256: `143804185f5a98dd3de695efcd9e5162b5b4131b8c8a4b253fe96ddda7b33088`.
+- IPA SHA-256: `622571618795f32b61100558837003d8406130862053f7f48dbf17861e7cbbb8`; 328,554 bytes.
+- Archive and IPA integrity checked. Embedded bundle identifier `com.markanthony.asunremote`, version `1.2.0`, build `3`, iPhoneOS platform, minimum iOS 17.0, and arm64 Mach-O executable confirmed.
+- The distributed ZIP is the unmodified cloud artifact, including the version 1.2 Windows installation instructions.
+
+These checks establish compilation, package integrity, and simulated protocol behavior. They do not establish that either reported bug is resolved on the user's physical TV.
 
 ## Version 1.1 validation history
 
