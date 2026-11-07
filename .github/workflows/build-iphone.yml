@@ -1,0 +1,45 @@
+name: Build iPhone app for Windows
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: asun-remote-iphone-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 20
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Show build tools
+        run: |
+          xcodebuild -version
+          swift --version
+
+      - name: Test the TV protocol
+        run: swift test -j 2
+
+      - name: Build unsigned iPhone package
+        run: bash scripts/build-unsigned-ipa.sh
+
+      - name: Save app package and Windows instructions
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: AsunRemote-for-Windows
+          path: |
+            dist/AsunRemote-unsigned.ipa
+            dist/SHA256SUMS.txt
+            WINDOWS_SETUP.md
+          if-no-files-found: error
+          retention-days: 7
