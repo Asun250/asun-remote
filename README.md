@@ -4,7 +4,7 @@ A native SwiftUI remote-control project for Mark Anthony’s **LG webOS UM6970PU
 
 **Version 1.3 adds a registered TV keyboard session, live field readiness, and Send & Search.** Select a search field on the TV, open Keyboard on the iPhone, and wait for **TV text field ready**. Type a draft and choose **Send to TV** or **Send & Search**. The app waits for text acknowledgement before submitting Search, preserves unconfirmed drafts, and clears confirmed drafts to avoid duplicate insertion.
 
-The user confirmed the v1.2 OK and volume changes work on the TV. Their new keyboard report is specifically about **YouTube**. A YouTube screen may use its own keyboard without exposing an LG text field; the app now reports that state instead of silently sending text to nowhere. YouTube compatibility on this TV still requires a physical test. The v1.3 cloud build is pending.
+The user confirmed the v1.2 OK and volume changes work on the TV. Their new keyboard report is specifically about **YouTube**. A YouTube screen may use its own keyboard without exposing an LG text field; the app now reports that state instead of silently sending text to nowhere. All 27 core tests passed and the complete v1.3 iPhone app compiled successfully. YouTube compatibility on this TV still requires a physical test.
 
 Standby wake remains experimental and unverified; the TV's physical power button is available for turning it on.
 
@@ -116,3 +116,5 @@ The app does not open router ports, disable phone security settings, or enable T
 - [webOS pointer socket button names, including ENTER](https://github.com/hobbyquaker/lgtv2#methods)
 - [WebOSClient remote Enter / OK usage](https://github.com/jareksedy/WebOSClient)
 - [Apple: explicit content shape for hit testing](https://developer.apple.com/documentation/swiftui/view/contentshape(_:eofill:))
+- [LG Connect SDK: keyboard registration, field status, and ordered text commands](https://github.com/ConnectSDK/Connect-SDK-Android-Core/blob/master/src/com/connectsdk/service/webos/WebOSTVKeyboardInput.java)
+- [YouTube: use an iPhone to connect to and control the TV app](https://support.google.com/youtube/answer/7640706?co=GENIE.Platform%3DiOS&hl=en)

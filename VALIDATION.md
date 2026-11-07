@@ -8,9 +8,18 @@ The user confirmed v1.2 works and then reported that typing in YouTube Search do
 
 The update establishes a session-scoped keyboard subscription, processes ongoing `currentWidget.focus` events, and clears keyboard state on reconnect. Sending requires a reported focused field. Send & Search waits for insertion acknowledgement before Enter. If Enter fails after acknowledged insertion, the UI clears the sent draft and reports the partial result so retry does not append it twice. Rejected or unconfirmed text remains in the draft. The keyboard UI reports readiness, progress, errors, and the distinction between editing the phone draft and deleting a TV character.
 
-Eight new protocol tests cover registration/insertion/submission ordering with Unicode and whitespace, ongoing focus changes, an acknowledgement without field status, insertion failure, partial success, unsubscribing/rechecking with stale events, keyboard-service rejection without breaking volume commands, and reconnect isolation. Total: **27 core tests**. Cloud test and native iPhone build results are pending.
+Eight new protocol tests cover registration/insertion/submission ordering with Unicode and whitespace, ongoing focus changes, an acknowledgement without field status, insertion failure, partial success, unsubscribing/rechecking with stale events, keyboard-service rejection without breaking volume commands, and reconnect isolation. All **27 core tests passed with zero failures**, and the complete Release iPhone build succeeded.
 
 No simulator UI or physical-TV keyboard test has been run. YouTube may not expose its custom search field through LG's IME service; the readiness status and a comparison with the TV browser are needed to distinguish that limitation from a connection failure. Do not report YouTube typing as fixed until the user verifies it.
+
+## Successful v1.3 build
+
+- [Cloud run #5](https://github.com/Asun250/asun-remote/actions/runs/42347538818) built source commit `bf6117287ef4aca7c041390b3858c8b94eee61eb`.
+- 27 core tests, zero failures; unsigned Release iPhone build successful.
+- Artifact ZIP: 360,488 bytes; SHA-256 `5e6ce1b2d081b49510a560a051334f1c80ef0a0428da9590f562b7cd49d66f16`.
+- IPA: 360,026 bytes; SHA-256 `8417ed186e6bae412a180812d28d9d9c9f61c042ecbc38580c9604d2040f89dc`.
+- ZIP/IPA integrity, embedded version 1.3.0 (4), bundle identifier `com.markanthony.asunremote`, iPhoneOS platform, minimum iOS 17.0, and arm64 executable verified.
+- Verified IPA copied to `C:\Asun remote app\AsunRemote-v1.3.ipa` with the same SHA-256. The distributed ZIP is the unchanged cloud artifact.
 
 ## Version 1.2 history
 
