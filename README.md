@@ -2,7 +2,9 @@
 
 A native SwiftUI remote-control project for Mark Anthony’s **LG webOS UM6970PUA**, identified from the TV photo showing firmware **05.40.97**. iPhone with iOS 17 or later. No third-party app dependencies.
 
-**Version 1.1 adds an experimental power-on test.** Power off is implemented; successful standby wake on the physical TV is not yet verified. The app sends a direct unicast Wake-on-LAN packet and never labels packet transmission as a confirmed power-on. The [v1.1 cloud build](https://github.com/Asun250/asun-remote/actions/runs/42345317807) passed all **19 tests** and compiled the complete iPhone app with Xcode 16.4. The unsigned IPA is ready for Sideloadly; TV pairing and actual wake remain unverified.
+**Version 1.2 fixes OK selection and small volume-button tap targets.** OK now sends the remote Enter key to select the focused item in TV apps, instead of clicking a pointer location. Both plus and minus use the full 48-point-high button area. Physical verification in YouTube and Netflix is still required; the new cloud build is pending.
+
+The user has used the app on the TV and reported these two problems. Standby wake remains experimental and unverified; the TV's physical power button is available for turning it on.
 
 **Only have Windows? Start with [WINDOWS_SETUP.md](WINDOWS_SETUP.md).** Sideloadly on Windows can sign and install the IPA. The project includes a manual GitHub Actions cloud-Mac build and an unsigned IPA packaging script for future updates.
 
@@ -19,7 +21,7 @@ A native SwiftUI remote-control project for Mark Anthony’s **LG webOS UM6970PU
 - Experimental **Try turning on** control, with per-TV MAC storage and bounded local unicast wake packets.
 - Connection timeouts, command errors, and reconnect after returning to the app.
 
-Power **on** must be tested before relying on it. See the setup and limitations below. Volume routed through a soundbar/receiver, individual app playback, and text-entry behavior need testing on your setup. This project makes no claim of having been tested on the physical UM6970PUA yet.
+Power **on** must be tested before relying on it. See the setup and limitations below. Volume routed through a soundbar/receiver, individual app playback, and text-entry behavior need testing on your setup. The user has reported initial real-TV behavior; the v1.2 fixes and other firmware-specific functions still need on-device testing.
 
 ## Install using a Mac
 
@@ -106,3 +108,9 @@ The app does not open router ports, disable phone security settings, or enable T
 - [Apple: personal team and signing limitations](https://developer.apple.com/help/account/basics/about-your-developer-account)
 - [LG 2019-generation Mobile TV On guide](https://kr.eguide.lgappstv.com/manual/w19_mr/dvb/Contents/settings/connection/mobiletvon_e_c_a_t/eng/w45__settings__connection__mobiletvon_e_c_a_t__eng.html)
 - [Apple: local network privacy](https://developer.apple.com/documentation/technotes/tn3179-understanding-local-network-privacy)
+
+## Control references
+
+- [webOS pointer socket button names, including ENTER](https://github.com/hobbyquaker/lgtv2#methods)
+- [WebOSClient remote Enter / OK usage](https://github.com/jareksedy/WebOSClient)
+- [Apple: explicit content shape for hit testing](https://developer.apple.com/documentation/swiftui/view/contentshape(_:eofill:))

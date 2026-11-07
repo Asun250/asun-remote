@@ -152,6 +152,7 @@ struct ContentView: View {
                         .frame(width: 82, height: 82)
                         .background(RemoteTheme.accent.gradient, in: Circle())
                         .foregroundStyle(RemoteTheme.background)
+                        .contentShape(Circle())
                 }.buttonStyle(PressStyle()).accessibilityLabel("OK, select")
                 padButton("Right", "chevron.right", .right)
             }
@@ -175,6 +176,7 @@ struct ContentView: View {
             Image(systemName: icon).font(.system(size: 19, weight: .medium))
                 .frame(minWidth: 48, minHeight: 48).foregroundStyle(color)
                 .background(RemoteTheme.panel, in: RoundedRectangle(cornerRadius: 17))
+                .contentShape(RoundedRectangle(cornerRadius: 17))
         }.buttonStyle(PressStyle()).accessibilityLabel(name)
     }
 
@@ -185,6 +187,7 @@ struct ContentView: View {
                 Text(name).font(.caption)
             }.frame(maxWidth: .infinity).frame(height: 74)
                 .background(RemoteTheme.panel, in: RoundedRectangle(cornerRadius: 20))
+                .contentShape(RoundedRectangle(cornerRadius: 20))
         }.buttonStyle(PressStyle()).accessibilityLabel(name)
     }
 
@@ -193,11 +196,13 @@ struct ContentView: View {
         VStack(spacing: 6) {
             Button { haptic(); up() } label: {
                 Image(systemName: "plus").font(.title3).frame(maxWidth: .infinity).frame(height: 48)
+                    .contentShape(Rectangle())
             }.accessibilityLabel(title == "VOLUME" ? "Volume up" : "Channel up")
             Text(value).font(.system(.title3, design: .rounded, weight: .semibold)).monospacedDigit()
             Text(title).font(.system(size: 9, weight: .bold)).tracking(1).foregroundStyle(.secondary)
             Button { haptic(); down() } label: {
                 Image(systemName: "minus").font(.title3).frame(maxWidth: .infinity).frame(height: 48)
+                    .contentShape(Rectangle())
             }.accessibilityLabel(title == "VOLUME" ? "Volume down" : "Channel down")
         }.buttonStyle(PressStyle()).frame(maxWidth: .infinity)
             .padding(.vertical, 6).background(RemoteTheme.panel, in: Capsule())

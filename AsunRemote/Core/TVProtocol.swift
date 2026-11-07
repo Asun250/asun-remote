@@ -118,7 +118,7 @@ enum TVProtocol {
             "forcePairing": .bool(false),
             "manifest": .object([
                 "manifestVersion": .number(1),
-                "appVersion": .string("1.1.0"),
+                "appVersion": .string("1.2.0"),
                 "appId": .string("com.asunstudios.remote"),
                 "vendorId": .string("Asun Studios"),
                 "localizedAppNames": .object(["": .string("Asun Remote")]),
@@ -134,7 +134,9 @@ enum RemoteButton: String, CaseIterable, Sendable {
     case up = "UP", down = "DOWN", left = "LEFT", right = "RIGHT"
     case home = "HOME", back = "BACK", menu = "MENU", ok = "ENTER"
     var wireMessage: String {
-        self == .ok ? "type:click\n\n" : "type:button\nname:\(rawValue)\n\n"
+        // OK selects the focused item, like the physical remote. A pointer click
+        // targets the cursor position and can miss focused streaming-app profiles.
+        "type:button\nname:\(rawValue)\n\n"
     }
 }
 

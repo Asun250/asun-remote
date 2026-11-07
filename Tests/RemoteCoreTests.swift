@@ -204,7 +204,7 @@ final class RemoteCoreTests: XCTestCase {
         await client.disconnect()
     }
 
-    func testNavigationUsesTheTVPointerSocketAndCorrectFraming() async throws {
+    func testNavigationUsesRemoteEnterToSelectTheFocusedItem() async throws {
         let pointer = FakeSocket()
         let control = FakeSocket { text, socket in
             let request = try decode(text)
@@ -218,7 +218,7 @@ final class RemoteCoreTests: XCTestCase {
         try await client.press(.ok)
         try await client.press(.back)
         let commands = await pointer.sent
-        XCTAssertEqual(commands, ["type:button\nname:UP\n\n", "type:click\n\n", "type:button\nname:BACK\n\n"])
+        XCTAssertEqual(commands, ["type:button\nname:UP\n\n", "type:button\nname:ENTER\n\n", "type:button\nname:BACK\n\n"])
         let requests = try await control.sent.map(decode)
         XCTAssertEqual(requests.filter { $0.uri?.contains("getPointerInputSocket") == true }.count, 1)
         await client.disconnect()

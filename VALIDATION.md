@@ -1,8 +1,16 @@
-# Validation — Asun Remote 1.1
+# Validation — Asun Remote 1.2
 
 Updated November 6, 2026 (Pacific time). Target family: LG webOS UM6970PUA.
 
-## Current update
+## Current update: v1.2
+
+The user reports that OK reacts but does not open the selected YouTube/Netflix profile, and Volume Down only works occasionally. The installed version number was not confirmed. App launch and some TV communication are now evidenced by the user's report; it does not establish correct profile selection or reliable volume control.
+
+Code inspection found that OK sent `type:click`, while the D-pad moves focus. It now sends a single `type:button` with `name:ENTER`. The existing navigation regression test checks Up → Enter → Back over one pointer socket and the exact framing. The volume rocker labels had no explicit hit shape around their small glyphs; each now has a full-width, 48-point-high rectangular hit area. Other drawn buttons have explicit matching hit shapes.
+
+The existing 19 core tests and complete iOS build will run for this update. No automated UI or physical-TV test has been run for the corrected tap areas. On-device checks must cover both streaming apps and taps around the minus glyph. Power-on remains experimental; the user found the physical power button sufficient for turning the TV on.
+
+## Version 1.1 validation history
 
 Version 1.1 adds MAC parsing and a standard 102-byte Wake-on-LAN packet; a nonblocking, interface-bound UDP unicast sender; per-IP MAC storage; and an explicitly experimental power-on control accessible while disconnected. Three requests go to UDP port 9, 250 ms apart. Targets must be directly attached local IPv4 hosts; network, broadcast, self, off-subnet, point-to-point, and invalid-mask destinations are rejected. No multicast/broadcast entitlement is added.
 
@@ -14,8 +22,8 @@ The user explicitly approved uploading the update to the existing private Asun25
 
 ## Physical verification still required
 
-- App launch after Developer Mode is enabled; native layout and accessibility.
-- Pairing, Keychain/TLS persistence, and actual remote commands on this TV.
+- Corrected v1.2 tap areas and streaming-app profile selection; native layout and accessibility.
+- Keychain/TLS persistence and reliable behavior of all remote commands on this TV.
 - Wake request acceptance by the signed iOS app with Local Network permission.
 - Actual power-on after short standby, 15 minutes, and overnight. The app cannot infer screen power from successful UDP transmission. A later registered TV session confirms connectivity only.
 - Unicast wake can fail after ARP cache expiry or deeper standby. These limits remain even if all automated tests and compilation pass.
@@ -26,7 +34,7 @@ Do not report reliable power on, off, or complete remote replacement as hardware
 
 The [v1.0 cloud run](https://github.com/Asun250/asun-remote/actions/runs/42342321883), commit `09f1ec6f2072fdd5112e82fd927f84948c66638a`, passed 15 core tests and the full unsigned iPhoneOS 18.5 arm64 build with Xcode 16.4 / Apple Swift 6.1.2. The original IPA SHA-256 was `218f802d84b8de5327c1dd7d073b2050689db5fb21088fb53902c87afc6c9a04`.
 
-The user connected the iPhone through a rear PC USB port and provided a Sideloadly screenshot showing Done / 100%. They enabled Developer Mode and restarted the phone. The app opening and TV pairing have not yet been confirmed.
+The user connected the iPhone through a rear PC USB port and provided a Sideloadly screenshot showing Done / 100%. They enabled Developer Mode and restarted the phone. At that point app opening and TV pairing had not yet been confirmed; the later v1.2 bug report provides evidence of app use and some TV communication.
 
 ## Successful v1.1 build
 

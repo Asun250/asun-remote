@@ -2,15 +2,19 @@
 
 You do not need to own a Mac. A cloud Mac builds the app once, then **Sideloadly on Windows** signs and installs it on your iPhone. After installation, the remote communicates directly with your LG TV. Your PC is only needed for installation and periodic signing refreshes.
 
-**Version 1.1:** adds an experimental power-on test. Install the newly built IPA over the existing app using the **same Apple account and bundle identifier**. The [updated cloud build](https://github.com/Asun250/asun-remote/actions/runs/42345317807) passed all 19 tests and the complete iPhone Release build. The earlier v1.0 installation reached Done in Sideloadly; opening, TV pairing, and physical standby wake are not yet verified.
+**Version 1.2:** fixes OK selecting the highlighted item and makes the entire plus/minus button area tappable. Install the new IPA over the existing app using the **same Apple account and bundle identifier**. Do not delete the installed app first.
 
-For an update, choose the new `AsunRemote-unsigned.ipa` in Sideloadly and press Start. Do not delete the installed app first. The checksum for each build is included in `dist/SHA256SUMS.txt`. On Mark's PC, choose **Downloads → AsunRemote-v1.1.ipa** in Sideloadly. This distinct filename avoids accidentally reinstalling the old build. Older AsunRemote-Setup folders may contain v1.0.
+On Mark's PC, choose **Downloads → AsunRemote-v1.2.ipa** in Sideloadly, then click **Start**. If using this ZIP instead, extract it and select `dist/AsunRemote-unsigned.ipa`. The checksum is in `dist/SHA256SUMS.txt`. Confirm version 1.2 in the app's Connection settings after updating; older Downloads files may contain v1.0 or v1.1.
 
-Version 1.1.0 (build 2) IPA SHA-256: `361fed2f7047209ce9e718bd05cadd7cc0a3e3f1398c8ca5d92a8d4464757fbc`.
+After Sideloadly shows Done, test these two fixes on the TV:
+
+1. In YouTube, use the arrows to highlight a profile, then press OK once. Repeat in Netflix.
+2. Tap Volume Down several times, including slightly beside the minus symbol within its button area. Each tap should register. Check Volume Up too.
+3. If a tap still fails, note whether the iPhone vibrates and whether the TV displays its volume indicator or the app shows an error. This separates a missed tap from a TV/network response problem.
 
 ## 1. Put the project in a private GitHub repository
 
-Already completed: the source is in the private repository [Asun250/asun-remote](https://github.com/Asun250/asun-remote). Skip to step 3 to install v1.1. The repository/build instructions below are for rebuilding or moving the project later.
+Already completed: the source is in the private repository [Asun250/asun-remote](https://github.com/Asun250/asun-remote). Skip to step 3 to install v1.2. The repository/build instructions below are for rebuilding or moving the project later.
 
 Put the contents of the extracted **AsunRemote** folder at the repository root. The root must contain all of these:
 

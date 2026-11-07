@@ -63,7 +63,7 @@ struct ConnectionView: View {
                 }
                 Section("About this version") {
                     Text("Works locally. No subscription, ads, LG login, or cloud account is used by this app.")
-                    Text("Version 1.1 adds a power-on test. The app reports a wake request separately from a confirmed TV connection.")
+                    Text("Version 1.2 improves OK selection and volume-button tapping. Power-on remains experimental; a wake request is separate from a confirmed TV connection.")
                     Text("A soundbar or receiver may control volume separately. Individual TV apps may limit playback or keyboard commands.")
                 }.font(.footnote).foregroundStyle(.secondary)
                 if !model.address.isEmpty {
