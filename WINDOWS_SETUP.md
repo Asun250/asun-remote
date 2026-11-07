@@ -2,13 +2,15 @@
 
 You do not need to own a Mac. A cloud Mac builds the app once, then **Sideloadly on Windows** signs and installs it on your iPhone. After installation, the remote communicates directly with your LG TV. Your PC is only needed for installation and periodic signing refreshes.
 
-**Current status:** source and cloud-build configuration are prepared. The cloud build has not been run, and no IPA has been generated yet. The first cloud run must verify that the complete iOS app compiles. Real TV pairing still needs testing.
+**Current status:** the [cloud build passed](https://github.com/Asun250/asun-remote/actions/runs/42342321883), including all 15 protocol tests and the complete iPhone app build. The unsigned IPA is ready. Signing, installation, and real TV pairing still need testing.
+
+On Mark's Windows PC, the files are in **Downloads → AsunRemote-Setup**. The IPA is inside **App → dist**. Install `iTunes64Setup.exe`, `iCloudSetup.exe`, and `SideloadlySetup64.exe` using their setup windows, then continue at step 3 below. These installers came from the official Sideloadly page and its Apple download links. iCloud supplies components needed by Sideloadly; do not enable iCloud photo or file syncing just for this setup.
+
+The IPA SHA-256 is `218f802d84b8de5327c1dd7d073b2050689db5fb21088fb53902c87afc6c9a04`.
 
 ## 1. Put the project in a private GitHub repository
 
-Your connected GitHub account is `Asun250`. Suggested new repository name: `asun-remote`.
-
-Create a **private** repository at [github.com/new](https://github.com/new). The current ChatGPT GitHub connection can work with files in an accessible repository, but does not expose repository creation. You can create it yourself and send its link, or authorize browser use to create it.
+Already completed: the source is in the private repository [Asun250/asun-remote](https://github.com/Asun250/asun-remote). Skip to step 3 to install the package already built. The repository/build instructions below are for rebuilding or moving the project later.
 
 Put the contents of the extracted **AsunRemote** folder at the repository root. The root must contain all of these:
 

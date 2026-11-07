@@ -2,9 +2,9 @@
 
 A native SwiftUI remote-control project for Mark Anthony’s **LG webOS UM6970PUA**, identified from the TV photo showing firmware **05.40.97**. iPhone with iOS 17 or later. No third-party app dependencies.
 
-**This download is source code, not an installable IPA or TestFlight link.** The control core has automated tests; the iPhone UI still needs an Xcode build and a real pairing test on your TV. There is no Mac or TV connected to the build environment used to prepare this project.
+**This repository contains source code. An unsigned iPhone IPA is now available from the [successful cloud build](https://github.com/Asun250/asun-remote/actions/runs/42342321883).** The complete iPhone app compiled with Xcode 16.4 and all 15 protocol tests passed on the cloud Mac. Signing, device installation, on-screen layout, and real pairing with your TV still need verification.
 
-**Only have Windows? Start with [WINDOWS_SETUP.md](WINDOWS_SETUP.md).** The project now includes a manual GitHub Actions cloud-Mac build and an unsigned IPA packaging script. After that build succeeds, Sideloadly on Windows can sign and install the app. No cloud build or device installation has been completed yet.
+**Only have Windows? Start with [WINDOWS_SETUP.md](WINDOWS_SETUP.md).** Sideloadly on Windows can sign and install the IPA. The project includes a manual GitHub Actions cloud-Mac build and an unsigned IPA packaging script for future updates.
 
 ## What the first version implements
 
